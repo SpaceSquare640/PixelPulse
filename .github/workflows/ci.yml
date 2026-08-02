@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  test-core:
     # windows-latest because pyautogui/pynput target Windows and
     # core/platform_windows.py assumes the Windows DPI API.
     runs-on: windows-latest
@@ -25,3 +25,23 @@ jobs:
 
       - name: Run tests
         run: pytest -v
+
+  build-gui:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: gui/package-lock.json
+
+      - name: Install GUI dependencies
+        working-directory: gui
+        run: npm ci
+
+      - name: Type-check and build renderer
+        working-directory: gui
+        run: npm run build
