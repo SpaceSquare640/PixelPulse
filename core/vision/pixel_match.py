@@ -35,3 +35,14 @@ def match_pixel(
     pixel_rgb = np.array([r, g, b], dtype=int)
     target = np.array(target_rgb, dtype=int)
     return bool(np.all(np.abs(pixel_rgb - target) <= tolerance))
+
+
+def read_pixel_rgb(frame: np.ndarray, x: int, y: int) -> tuple[int, int, int]:
+    """Read the RGB value at (x, y) in a BGR frame -- used by the point picker
+    to turn a click into a `pixel` trigger's `targetRgb`.
+
+    讀取 BGR 畫面中 (x, y) 位置的 RGB 值 —— 供點選工具使用，把使用者點的一個點
+    轉換成 `pixel` 觸發條件的 `targetRgb`。
+    """
+    b, g, r = frame[y, x][:3]
+    return (int(r), int(g), int(b))

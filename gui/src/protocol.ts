@@ -61,6 +61,10 @@ export type ClientMessage =
   | { type: 'rule.list' }
   | { type: 'rule.delete'; name: string }
   | { type: 'rule.toggle'; name: string; enabled: boolean }
+  | { type: 'rule.reorder'; names: string[] }
+  | { type: 'rule.preview'; trigger: TriggerConfig }
+  | { type: 'capture.crop'; roi: [number, number, number, number]; name: string }
+  | { type: 'capture.pixel'; x: number; y: number }
   | { type: 'engine.start' }
   | { type: 'engine.stop' }
   | { type: 'engine.status' }
@@ -71,4 +75,7 @@ export type ServerMessage =
   | { type: 'rule.list'; rules: RuleConfig[] }
   | { type: 'engine.status'; running: boolean; ruleCount: number }
   | { type: 'engine.event'; event: EngineEvent }
+  | { type: 'rule.preview'; matched: boolean; x?: number | null; y?: number | null; confidence?: number | null }
+  | { type: 'capture.crop'; imagePath: string; previewPngBase64: string; roi: [number, number, number, number] }
+  | { type: 'capture.pixel'; x: number; y: number; targetRgb: [number, number, number] }
   | { type: 'error'; message: string }

@@ -1,9 +1,10 @@
 import json
 import time
+from pathlib import Path
 
 import pytest
 
-from core.rules.models import RuleConfig
+from core.rules.models import RuleConfig, TriggerConfig
 from core.server.service import EngineService, RuleNotFoundError
 
 _RULE = RuleConfig.model_validate(
@@ -22,8 +23,14 @@ def rules_path(tmp_path):
     return path
 
 
-def test_add_rule_persists_to_disk(rules_path):
-    service = EngineService(rules_path=rules_path)
+@pytest.fixture
+def service(rules_path, tmp_path):
+    svc = EngineService(rules_path=rules_path, targets_dir=tmp_path / "targets")
+    yield svc
+    svc.close()
+
+
+def test_add_rule_persists_to_disk(service, rules_path):
     service.add_rule(_RULE)
 
     assert [r.name for r in service.list_rules()] == ["Click confirm"]
@@ -31,14 +38,12 @@ def test_add_rule_persists_to_disk(rules_path):
     assert on_disk[0]["name"] == "Click confirm"
 
 
-def test_delete_missing_rule_raises(rules_path):
-    service = EngineService(rules_path=rules_path)
+def test_delete_missing_rule_raises(service):
     with pytest.raises(RuleNotFoundError):
         service.delete_rule("nope")
 
 
-def test_toggle_rule_updates_enabled_flag(rules_path):
-    service = EngineService(rules_path=rules_path)
+def test_toggle_rule_updates_enabled_flag(service):
     service.add_rule(_RULE)
 
     service.toggle_rule("Click confirm", enabled=False)
@@ -46,15 +51,74 @@ def test_toggle_rule_updates_enabled_flag(rules_path):
     assert service.list_rules()[0].enabled is False
 
 
-def test_start_stop_with_no_rules_is_safe(rules_path):
+def test_reorder_rules_changes_order(service):
+    a = _RULE.model_copy(update={"name": "A"})
+    b = _RULE.model_copy(update={"name": "B"})
+    service.add_rule(a)
+    service.add_rule(b)
+
+    service.reorder_rules(["B", "A"])
+
+    assert [r.name for r in service.list_rules()] == ["B", "A"]
+
+
+def test_reorder_rules_rejects_mismatched_names(service):
+    service.add_rule(_RULE)
+
+    with pytest.raises(ValueError, match="reorder must list every rule exactly once"):
+        service.reorder_rules(["Click confirm", "Ghost Rule"])
+
+
+def test_capture_crop_saves_file_and_returns_preview(service):
+    image_path, preview_b64 = service.capture_crop((0, 0, 20, 20), "My Rule!")
+
+    assert Path(image_path).exists()
+    assert Path(image_path).suffix == ".png"
+    assert len(preview_b64) > 0
+
+
+def test_capture_pixel_returns_rgb_triplet(service):
+    r, g, b = service.capture_pixel(0, 0)
+
+    assert all(0 <= channel <= 255 for channel in (r, g, b))
+
+
+def test_preview_trigger_pixel_match(service):
+    r, g, b = service.capture_pixel(0, 0)
+    trigger = TriggerConfig(kind="pixel", roi=(0, 0, 10, 10), pixel_x=0, pixel_y=0, target_rgb=(r, g, b), tolerance=5)
+
+    match = service.preview_trigger(trigger)
+
+    assert match is not None
+    assert match.x == 0 and match.y == 0
+
+
+def test_preview_trigger_pixel_no_match(service):
+    trigger = TriggerConfig(
+        kind="pixel",
+        roi=(0, 0, 10, 10),
+        pixel_x=0,
+        pixel_y=0,
+        target_rgb=(1, 2, 3),  # extremely unlikely to be the real pixel colour
+        tolerance=0,
+    )
+
+    match = service.preview_trigger(trigger)
+
+    assert match is None
+
+
+def test_start_stop_with_no_rules_is_safe(rules_path, tmp_path):
     # No rules means the engine loop never touches the screen or input
     # backend -- safe to actually start/stop in a test.
-    service = EngineService(rules_path=rules_path, scan_interval_s=0.02)
+    service = EngineService(rules_path=rules_path, targets_dir=tmp_path / "targets", scan_interval_s=0.02)
+    try:
+        assert service.is_running is False
+        service.start()
+        time.sleep(0.1)
+        assert service.is_running is True
 
-    assert service.is_running is False
-    service.start()
-    time.sleep(0.1)
-    assert service.is_running is True
-
-    service.stop()
-    assert service.is_running is False
+        service.stop()
+        assert service.is_running is False
+    finally:
+        service.close()

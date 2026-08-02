@@ -11,7 +11,7 @@ from typing import Literal, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from core.rules.models import RuleConfig
+from core.rules.models import RuleConfig, TriggerConfig
 
 # --- Client -> server -------------------------------------------------------
 
@@ -48,11 +48,54 @@ class EngineStatusRequest(BaseModel):
     type: Literal["engine.status"] = "engine.status"
 
 
+class RuleReorderMessage(BaseModel):
+    type: Literal["rule.reorder"] = "rule.reorder"
+    names: list[str]
+
+
+class RulePreviewMessage(BaseModel):
+    """One-shot detection test against a not-yet-saved trigger, for the rule
+    editor's "test match" button.
+
+    針對還沒儲存的觸發條件做一次性偵測測試，供規則編輯器的「測試比對」按鈕使用。
+    """
+
+    type: Literal["rule.preview"] = "rule.preview"
+    trigger: TriggerConfig
+
+
+class CaptureCropMessage(BaseModel):
+    """Crop and save a fresh capture of `roi` as a template image, for the
+    region picker's result.
+
+    針對 `roi` 重新擷取並裁切、存成樣板圖片 —— 供框選工具的結果使用。
+    """
+
+    type: Literal["capture.crop"] = "capture.crop"
+    roi: tuple[int, int, int, int]
+    name: str
+
+
+class CapturePixelMessage(BaseModel):
+    """Read the colour at a single screen point, for the point picker's result.
+
+    讀取螢幕上單一座標點的顏色 —— 供點選工具的結果使用。
+    """
+
+    type: Literal["capture.pixel"] = "capture.pixel"
+    x: int
+    y: int
+
+
 ClientMessage = Union[
     RuleCreateMessage,
     RuleListRequest,
     RuleDeleteMessage,
     RuleToggleMessage,
+    RuleReorderMessage,
+    RulePreviewMessage,
+    CaptureCropMessage,
+    CapturePixelMessage,
     EngineStartMessage,
     EngineStopMessage,
     EngineStatusRequest,
@@ -63,6 +106,10 @@ _CLIENT_MESSAGE_TYPES: dict[str, type[BaseModel]] = {
     "rule.list": RuleListRequest,
     "rule.delete": RuleDeleteMessage,
     "rule.toggle": RuleToggleMessage,
+    "rule.reorder": RuleReorderMessage,
+    "rule.preview": RulePreviewMessage,
+    "capture.crop": CaptureCropMessage,
+    "capture.pixel": CapturePixelMessage,
     "engine.start": EngineStartMessage,
     "engine.stop": EngineStopMessage,
     "engine.status": EngineStatusRequest,
@@ -100,6 +147,34 @@ class EngineStatusResponse(BaseModel):
 class EngineEventMessage(BaseModel):
     type: Literal["engine.event"] = "engine.event"
     event: dict
+
+
+class RulePreviewResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    type: Literal["rule.preview"] = "rule.preview"
+    matched: bool
+    x: int | None = None
+    y: int | None = None
+    confidence: float | None = None
+
+
+class CaptureCropResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    type: Literal["capture.crop"] = "capture.crop"
+    image_path: str = Field(alias="imagePath")
+    preview_png_base64: str = Field(alias="previewPngBase64")
+    roi: tuple[int, int, int, int]
+
+
+class CapturePixelResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    type: Literal["capture.pixel"] = "capture.pixel"
+    x: int
+    y: int
+    target_rgb: tuple[int, int, int] = Field(alias="targetRgb")
 
 
 class ErrorMessage(BaseModel):

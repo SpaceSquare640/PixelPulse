@@ -1,5 +1,5 @@
 from .match_result import Match
-from .pixel_match import match_pixel
+from .pixel_match import match_pixel, read_pixel_rgb
 from .template_matching import find_all_targets, find_target, load_template
 
 __all__ = [
@@ -8,4 +8,5 @@ __all__ = [
     "find_all_targets",
     "load_template",
     "match_pixel",
+    "read_pixel_rgb",
 ]

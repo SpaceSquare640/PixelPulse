@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { EngineControls } from './components/EngineControls'
 import { LogPanel } from './components/LogPanel'
+import { RuleEditor } from './components/RuleEditor'
 import { RuleList } from './components/RuleList'
 import { StatusBar } from './components/StatusBar'
 import { useEngineSocket } from './useEngineSocket'
@@ -13,9 +15,16 @@ function App() {
     lastError,
     startEngine,
     stopEngine,
+    createRule,
     deleteRule,
     toggleRule,
+    reorderRules,
+    captureCrop,
+    capturePixel,
+    previewTrigger,
   } = useEngineSocket()
+
+  const [editorOpen, setEditorOpen] = useState(false)
 
   return (
     <div className="app">
@@ -28,9 +37,31 @@ function App() {
           onStart={startEngine}
           onStop={stopEngine}
         />
-        <RuleList rules={rules} onToggle={toggleRule} onDelete={deleteRule} />
+
+        <RuleList
+          rules={rules}
+          onToggle={toggleRule}
+          onDelete={deleteRule}
+          onReorder={reorderRules}
+          onNewRule={() => setEditorOpen(true)}
+        />
+
         <LogPanel events={events} />
       </main>
+
+      {editorOpen && (
+        <RuleEditor
+          existingNames={rules.map((r) => r.name)}
+          onClose={() => setEditorOpen(false)}
+          onSave={(rule) => {
+            createRule(rule)
+            setEditorOpen(false)
+          }}
+          captureCrop={captureCrop}
+          capturePixel={capturePixel}
+          previewTrigger={previewTrigger}
+        />
+      )}
     </div>
   )
 }

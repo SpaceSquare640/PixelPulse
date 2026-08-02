@@ -1,4 +1,4 @@
-# PixelPulse — 核心引擎 + GUI（Phase 2）
+# PixelPulse — 核心引擎 + GUI（Phase 3）
 
 English version: [README.md](README.md)
 
@@ -6,11 +6,12 @@ English version: [README.md](README.md)
 現在有兩種執行方式：
 
 - **命令列**（Phase 1，仍可獨立使用）：直接用 `rules.json` 檔案驅動引擎，不需要 GUI。
-- **GUI**（Phase 2）：Electron + React 前端透過本機 WebSocket 跟同一個引擎溝通，
-  顯示連線/引擎狀態、已載入的規則，以及即時活動紀錄。
+- **GUI**（Phase 2+3）：Electron + React 前端透過本機 WebSocket 跟同一個引擎溝通 ——
+  連線/引擎狀態、附螢幕框選工具與即時比對預覽的規則編輯器、可拖曳排序且有縮圖的
+  規則清單，以及即時活動紀錄。
 
-完整架構與開發時程請見 `PixelPulse_Document/` 裡的專案規劃（Phase 3 以後會加入
-規則編輯器／ROI 選取工具、巨集系統、以及原生效能加速模組）。
+完整架構與開發時程請見 `PixelPulse_Document/` 裡的專案規劃（Phase 4 以後會加入
+巨集系統與原生效能加速模組）。
 
 ## 環境建置（Python 核心）
 
@@ -53,14 +54,22 @@ python -m core.run rules.json
    `npm run dev` 會同時啟動 Vite 開發伺服器與 Electron。關閉視窗只會縮到系統匣，
    不會真的結束程式 —— 要離開請用系統匣選單裡的「Quit」。
 
-目前 GUI 會顯示連線／引擎狀態、從 `rules.json` 載入的規則清單，以及即時活動紀錄
-（命中、觸發、dry-run、每條規則各自的錯誤）。還沒有規則編輯器 —— 現階段請手動編輯
-`rules.json` 新增規則（Phase 3 會加入 ROI 選取工具與規則編輯器介面）。
+點擊 **New Rule** 開啟規則編輯器：
+
+1. **Trigger（觸發條件）** —— 選「Image (template)」或「Pixel colour」，然後點
+   *Select Region on Screen* / *Pick a Point on Screen*。整個桌面會變暗，只留下你
+   正在選取的範圍；拖曳框選一塊區域（或點選一個點）後放開，圖片/像素會立即擷取，
+   縮圖或色塊會顯示出來。存檔前可以用 **Test Match** 確認辨識準確。
+2. **Action（動作）** —— 點擊、雙擊、按鍵、或輸入文字。
+3. **Safety（安全參數）** —— 名稱、冷卻時間、可選的觸發上限、dry-run。
+
+新規則一律先進入 dry-run，確認沒問題後再到規則清單把開關切成正式執行。拖曳規則卡片
+左側的把手可以調整順序（規則按清單順序依序掃描）。
 
 ## 測試
 
 ```bash
-pytest                     # Python：核心引擎 + 伺服器（22 個測試）
+pytest                     # Python：核心引擎 + 伺服器（34 個測試）
 cd gui && npm run build    # TypeScript：對前端做型別檢查
 ```
 
@@ -72,11 +81,21 @@ core/
 ├─ vision/         # 樣板匹配 + 像素顏色比對 (OpenCV/NumPy)
 ├─ automation/      # 滑鼠鍵盤後端 + 緊急停止熱鍵
 ├─ rules/          # 規則格式定義、JSON 讀取器、主掃描迴圈、引擎事件
-├─ server/         # 包裝引擎、供 GUI 使用的 FastAPI + WebSocket 伺服器
+├─ server/         # FastAPI + WebSocket 伺服器：引擎控制、規則增刪改查、
+│                   # 框選/點選擷取、即時比對預覽、供 GUI 縮圖用的 /targets 靜態檔案
 ├─ platform_windows.py
 └─ run.py          # 命令列進入點（Phase 1，無 GUI）
 
 gui/
-├─ electron/       # Electron 主行程（視窗、系統匣）
-└─ src/            # React 前端（狀態、引擎控制、規則清單、活動紀錄）
+├─ electron/
+│  ├─ main.js        # 視窗、系統匣、框選/點選工具視窗
+│  └─ preload.cjs     # contextBridge -> window.pixelpulse.{pickRegion,pickPoint}
+└─ src/
+   ├─ components/
+   │  ├─ RuleEditor.tsx      # 三步驟新增規則精靈
+   │  ├─ PickerOverlay.tsx   # 顯示在透明框選視窗裡的內容
+   │  ├─ RuleList.tsx        # 卡片清單、縮圖、拖曳排序
+   │  ├─ EngineControls.tsx / LogPanel.tsx / StatusBar.tsx
+   ├─ useEngineSocket.ts     # WebSocket 用戶端 + 請求/回應橋接
+   └─ protocol.ts            # 對應 core/server/protocol.py
 ```

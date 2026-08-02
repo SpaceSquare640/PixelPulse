@@ -1,4 +1,4 @@
-# PixelPulse — Core Engine + GUI (Phase 2)
+# PixelPulse — Core Engine + GUI (Phase 3)
 
 繁體中文版：[README.zh-TW.md](README.zh-TW.md)
 
@@ -8,13 +8,13 @@ it:
 
 - **CLI** (Phase 1, still works standalone): drive the engine straight from
   a `rules.json` file, no GUI required.
-- **GUI** (Phase 2): an Electron + React front end talks to the same engine
-  over a local WebSocket, showing connection/engine status, the loaded
-  rules, and a live activity log.
+- **GUI** (Phase 2+3): an Electron + React front end talks to the same
+  engine over a local WebSocket — connection/engine status, a rule editor
+  with an on-screen region/point picker and live match preview, a
+  drag-to-reorder rule list with thumbnails, and a live activity log.
 
 See the project plan in `PixelPulse_Document/` for the full architecture and
-roadmap (Phase 3+ adds the rule editor / ROI picker, macros, and native
-acceleration).
+roadmap (Phase 4+ adds macros and native acceleration).
 
 ## Setup (Python core)
 
@@ -59,15 +59,25 @@ stable. Press `Ctrl+Alt+Q` at any time to stop the engine immediately.
    window minimizes to the system tray on close instead of quitting — use
    the tray icon's "Quit" item to actually exit.
 
-The GUI currently shows connection/engine status, the rules loaded from
-`rules.json`, and a live activity log (matches, triggers, dry-runs, and
-per-rule errors). There's no rule editor yet — add rules by hand to
-`rules.json` for now (Phase 3 adds the ROI picker and rule editor UI).
+Click **New Rule** to open the editor:
+
+1. **Trigger** — pick "Image (template)" or "Pixel colour", then click
+   *Select Region on Screen* / *Pick a Point on Screen*. The whole desktop
+   dims except the area you're selecting; drag a box (or click a point) and
+   release. The image/pixel is captured immediately and a thumbnail/colour
+   swatch shows up. Use **Test Match** to check it detects correctly before
+   saving.
+2. **Action** — click, double-click, key press, or typed text.
+3. **Safety** — name, cooldown, optional trigger limit, and dry-run.
+
+New rules always start in dry-run — flip the checkbox off in the rule list's
+toggle once you trust it. Drag rule cards by the handle to reorder them
+(rules are scanned in list order).
 
 ## Tests
 
 ```bash
-pytest       # Python: core engine + server (22 tests)
+pytest       # Python: core engine + server (34 tests)
 cd gui && npm run build   # TypeScript: type-checks the renderer
 ```
 
@@ -79,11 +89,22 @@ core/
 ├─ vision/        # template matching + pixel colour matching (OpenCV/NumPy)
 ├─ automation/     # mouse/keyboard backend + emergency-stop hotkey
 ├─ rules/         # rule schema, JSON loader, main scan loop, engine events
-├─ server/        # FastAPI + WebSocket server wrapping the engine for the GUI
+├─ server/        # FastAPI + WebSocket server: engine control, rule CRUD,
+│                  # region/point capture, live match preview, static
+│                  # /targets file serving for GUI thumbnails
 ├─ platform_windows.py
 └─ run.py         # CLI entry point (Phase 1, no GUI)
 
 gui/
-├─ electron/      # Electron main process (window, tray)
-└─ src/           # React renderer (status, engine controls, rule list, log)
+├─ electron/
+│  ├─ main.js       # window, tray, and the region/point picker window
+│  └─ preload.cjs    # contextBridge -> window.pixelpulse.{pickRegion,pickPoint}
+└─ src/
+   ├─ components/
+   │  ├─ RuleEditor.tsx      # 3-step new-rule wizard
+   │  ├─ PickerOverlay.tsx   # renders inside the transparent picker window
+   │  ├─ RuleList.tsx        # card list, thumbnails, drag-to-reorder
+   │  ├─ EngineControls.tsx / LogPanel.tsx / StatusBar.tsx
+   ├─ useEngineSocket.ts     # WebSocket client + request/response bridge
+   └─ protocol.ts            # mirrors core/server/protocol.py
 ```

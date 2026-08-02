@@ -28,7 +28,7 @@ def _receive_until(ws, message_type: str, max_messages: int = 10) -> dict:
 def client(tmp_path):
     rules_path = tmp_path / "rules.json"
     rules_path.write_text("[]", encoding="utf-8")
-    app = create_app(rules_path=str(rules_path))
+    app = create_app(rules_path=str(rules_path), targets_dir=str(tmp_path / "targets"))
     with TestClient(app) as test_client:
         yield test_client
 
@@ -48,10 +48,24 @@ def test_rule_create_broadcasts_updated_list(client):
         ws.receive_json()  # initial engine.status
 
         ws.send_json({"type": "rule.create", "payload": _RULE_PAYLOAD})
-        updated = ws.receive_json()
+        updated = _receive_until(ws, "rule.list")
 
-        assert updated["type"] == "rule.list"
         assert [r["name"] for r in updated["rules"]] == ["Click confirm"]
+
+
+def test_rule_create_also_refreshes_rule_count_in_status(client):
+    # Regression test: rule.create used to only broadcast rule.list, leaving
+    # engine.status's ruleCount (shown in the GUI as "N rule(s) loaded")
+    # stale until the next engine start/stop. Found via manual browser
+    # testing of the rule editor.
+    with client.websocket_connect("/ws") as ws:
+        ws.receive_json()
+        ws.receive_json()
+
+        ws.send_json({"type": "rule.create", "payload": _RULE_PAYLOAD})
+        status = _receive_until(ws, "engine.status")
+
+        assert status["ruleCount"] == 1
 
 
 def test_engine_start_stop_round_trip(client):
@@ -87,6 +101,85 @@ def test_delete_missing_rule_returns_error(client):
         ws.receive_json()
 
         ws.send_json({"type": "rule.delete", "name": "nope"})
+        error = ws.receive_json()
+
+        assert error["type"] == "error"
+
+
+def test_capture_pixel_returns_rgb(client):
+    with client.websocket_connect("/ws") as ws:
+        ws.receive_json()
+        ws.receive_json()
+
+        ws.send_json({"type": "capture.pixel", "x": 0, "y": 0})
+        response = ws.receive_json()
+
+        assert response["type"] == "capture.pixel"
+        assert response["x"] == 0 and response["y"] == 0
+        assert len(response["targetRgb"]) == 3
+
+
+def test_capture_crop_saves_image_and_returns_preview(client):
+    with client.websocket_connect("/ws") as ws:
+        ws.receive_json()
+        ws.receive_json()
+
+        ws.send_json({"type": "capture.crop", "roi": [0, 0, 20, 20], "name": "My Rule"})
+        response = ws.receive_json()
+
+        assert response["type"] == "capture.crop"
+        assert response["imagePath"].endswith(".png")
+        assert len(response["previewPngBase64"]) > 0
+
+
+def test_rule_preview_reports_match(client):
+    with client.websocket_connect("/ws") as ws:
+        ws.receive_json()
+        ws.receive_json()
+
+        ws.send_json({"type": "capture.pixel", "x": 0, "y": 0})
+        rgb = ws.receive_json()["targetRgb"]
+
+        ws.send_json(
+            {
+                "type": "rule.preview",
+                "trigger": {
+                    "kind": "pixel",
+                    "roi": [0, 0, 10, 10],
+                    "pixelX": 0,
+                    "pixelY": 0,
+                    "targetRgb": rgb,
+                    "tolerance": 5,
+                },
+            }
+        )
+        response = ws.receive_json()
+
+        assert response == {"type": "rule.preview", "matched": True, "x": 0, "y": 0, "confidence": 1.0}
+
+
+def test_rule_reorder_round_trip(client):
+    with client.websocket_connect("/ws") as ws:
+        ws.receive_json()
+        ws.receive_json()
+
+        ws.send_json({"type": "rule.create", "payload": {**_RULE_PAYLOAD, "name": "A"}})
+        _receive_until(ws, "rule.list")
+        ws.send_json({"type": "rule.create", "payload": {**_RULE_PAYLOAD, "name": "B"}})
+        _receive_until(ws, "rule.list")
+
+        ws.send_json({"type": "rule.reorder", "names": ["B", "A"]})
+        response = _receive_until(ws, "rule.list")
+
+        assert [r["name"] for r in response["rules"]] == ["B", "A"]
+
+
+def test_rule_reorder_mismatch_returns_error(client):
+    with client.websocket_connect("/ws") as ws:
+        ws.receive_json()
+        ws.receive_json()
+
+        ws.send_json({"type": "rule.reorder", "names": ["Ghost"]})
         error = ws.receive_json()
 
         assert error["type"] == "error"

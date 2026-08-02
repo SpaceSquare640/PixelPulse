@@ -1,15 +1,30 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ClientMessage, EngineEvent, RuleConfig, ServerMessage } from './protocol'
+import type { ClientMessage, EngineEvent, RuleConfig, ServerMessage, TriggerConfig } from './protocol'
+import { WS_URL } from './serverConfig'
 
-const WS_URL = 'ws://127.0.0.1:8765/ws'
 const RECONNECT_DELAY_MS = 2000
 const MAX_LOG_ENTRIES = 200
+const REQUEST_TIMEOUT_MS = 10000
 
 export type ConnectionState = 'connecting' | 'open' | 'closed'
 
 export interface EngineStatus {
   running: boolean
   ruleCount: number
+}
+
+// Server replies that a specific request() call is waiting for, as opposed
+// to unsolicited broadcasts (rule.list, engine.status, engine.event).
+type ResponseMessage = Extract<ServerMessage, { type: 'capture.crop' | 'capture.pixel' | 'rule.preview' }>
+
+interface PendingRequest {
+  resolve: (message: ResponseMessage) => void
+  reject: (error: Error) => void
+  timer: ReturnType<typeof setTimeout>
+}
+
+function isResponseType(type: ServerMessage['type']): type is ResponseMessage['type'] {
+  return type === 'capture.crop' || type === 'capture.pixel' || type === 'rule.preview'
 }
 
 export function useEngineSocket() {
@@ -25,6 +40,14 @@ export function useEngineSocket() {
   // 記錄元件是否仍在掛載中，避免元件卸載後，還有一個排定中的重連計時器
   // 觸發並嘗試操作已經失效的 socket。
   const mountedRef = useRef(true)
+  // At most one in-flight request/response call at a time (capture.crop /
+  // capture.pixel / rule.preview) -- the rule editor only ever awaits one
+  // of these before letting the user act again, so no correlation id is
+  // needed. An `error` reply while one is pending rejects it.
+  // 同一時間最多只有一個進行中的請求/回應呼叫（capture.crop / capture.pixel /
+  // rule.preview）—— 規則編輯器一次只會等待其中一個完成才會讓使用者繼續操作，
+  // 所以不需要關聯 ID。若有請求正在等待時收到 `error`，就用它來 reject。
+  const pendingRequestRef = useRef<PendingRequest | null>(null)
 
   useEffect(() => {
     mountedRef.current = true
@@ -56,6 +79,18 @@ export function useEngineSocket() {
       socket.onmessage = (raw) => {
         if (!isCurrent()) return
         const message: ServerMessage = JSON.parse(raw.data)
+
+        const pending = pendingRequestRef.current
+        if (pending && isResponseType(message.type)) {
+          clearTimeout(pending.timer)
+          pendingRequestRef.current = null
+          pending.resolve(message as ResponseMessage)
+        } else if (pending && message.type === 'error') {
+          clearTimeout(pending.timer)
+          pendingRequestRef.current = null
+          pending.reject(new Error(message.message))
+        }
+
         switch (message.type) {
           case 'rule.list':
             setRules(message.rules)
@@ -98,12 +133,60 @@ export function useEngineSocket() {
     }
   }, [])
 
+  const request = useCallback((message: ClientMessage): Promise<ResponseMessage> => {
+    return new Promise((resolve, reject) => {
+      if (socketRef.current?.readyState !== WebSocket.OPEN) {
+        reject(new Error('Not connected to the PixelPulse server.'))
+        return
+      }
+      if (pendingRequestRef.current) {
+        reject(new Error('Another request is already in progress.'))
+        return
+      }
+      const timer = setTimeout(() => {
+        pendingRequestRef.current = null
+        reject(new Error('Request timed out.'))
+      }, REQUEST_TIMEOUT_MS)
+      pendingRequestRef.current = { resolve, reject, timer }
+      socketRef.current.send(JSON.stringify(message))
+    })
+  }, [])
+
   const startEngine = useCallback(() => send({ type: 'engine.start' }), [send])
   const stopEngine = useCallback(() => send({ type: 'engine.stop' }), [send])
+  const createRule = useCallback((payload: RuleConfig) => send({ type: 'rule.create', payload }), [send])
   const deleteRule = useCallback((name: string) => send({ type: 'rule.delete', name }), [send])
   const toggleRule = useCallback(
     (name: string, enabled: boolean) => send({ type: 'rule.toggle', name, enabled }),
     [send],
+  )
+  const reorderRules = useCallback((names: string[]) => send({ type: 'rule.reorder', names }), [send])
+
+  const captureCrop = useCallback(
+    async (roi: [number, number, number, number], name: string) => {
+      const response = await request({ type: 'capture.crop', roi, name })
+      if (response.type !== 'capture.crop') throw new Error('Unexpected response to capture.crop')
+      return response
+    },
+    [request],
+  )
+
+  const capturePixel = useCallback(
+    async (x: number, y: number) => {
+      const response = await request({ type: 'capture.pixel', x, y })
+      if (response.type !== 'capture.pixel') throw new Error('Unexpected response to capture.pixel')
+      return response
+    },
+    [request],
+  )
+
+  const previewTrigger = useCallback(
+    async (trigger: TriggerConfig) => {
+      const response = await request({ type: 'rule.preview', trigger })
+      if (response.type !== 'rule.preview') throw new Error('Unexpected response to rule.preview')
+      return response
+    },
+    [request],
   )
 
   return {
@@ -114,7 +197,12 @@ export function useEngineSocket() {
     lastError,
     startEngine,
     stopEngine,
+    createRule,
     deleteRule,
     toggleRule,
+    reorderRules,
+    captureCrop,
+    capturePixel,
+    previewTrigger,
   }
 }

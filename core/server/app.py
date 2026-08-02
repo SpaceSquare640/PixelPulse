@@ -15,12 +15,18 @@ import asyncio
 import dataclasses
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import AsyncIterator
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.staticfiles import StaticFiles
 
 from core.rules.events import EngineEvent
 from core.server.protocol import (
+    CaptureCropMessage,
+    CaptureCropResponse,
+    CapturePixelMessage,
+    CapturePixelResponse,
     ClientMessage,
     EngineEventMessage,
     EngineStartMessage,
@@ -32,6 +38,9 @@ from core.server.protocol import (
     RuleDeleteMessage,
     RuleListRequest,
     RuleListResponse,
+    RulePreviewMessage,
+    RulePreviewResponse,
+    RuleReorderMessage,
     RuleToggleMessage,
     parse_client_message,
 )
@@ -69,7 +78,7 @@ class ConnectionManager:
             self.disconnect(websocket)
 
 
-def create_app(rules_path: str = DEFAULT_RULES_PATH) -> FastAPI:
+def create_app(rules_path: str = DEFAULT_RULES_PATH, targets_dir: str = "targets") -> FastAPI:
     manager = ConnectionManager()
     # Populated on startup; lets the engine's background thread schedule a
     # broadcast onto the asyncio loop via call_soon_threadsafe.
@@ -83,15 +92,23 @@ def create_app(rules_path: str = DEFAULT_RULES_PATH) -> FastAPI:
         if loop is not None:
             loop.call_soon_threadsafe(lambda: asyncio.create_task(manager.broadcast(message)))
 
-    service = EngineService(rules_path=rules_path, event_sink=on_engine_event)
+    service = EngineService(rules_path=rules_path, event_sink=on_engine_event, targets_dir=targets_dir)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         state["loop"] = asyncio.get_running_loop()
         yield
         service.stop()
+        service.close()
 
     app = FastAPI(title="PixelPulse Core Server", lifespan=lifespan)
+
+    # Serves captured template images to the GUI (rule list thumbnails) at a
+    # fixed "/targets" URL prefix regardless of the real targets_dir name.
+    # 讓 GUI 能透過固定的 "/targets" URL 前綴取得已擷取的樣板圖片（規則清單縮圖），
+    # 跟實際 targets_dir 的資料夾名稱無關。
+    Path(targets_dir).mkdir(parents=True, exist_ok=True)
+    app.mount("/targets", StaticFiles(directory=targets_dir), name="targets")
 
     @app.get("/health")
     async def health() -> dict:
@@ -113,6 +130,17 @@ def create_app(rules_path: str = DEFAULT_RULES_PATH) -> FastAPI:
     def _status_response() -> EngineStatusResponse:
         return EngineStatusResponse(running=service.is_running, ruleCount=len(service.list_rules()))
 
+    async def _broadcast_rules_and_status() -> None:
+        # ruleCount lives in engine.status, so any rule mutation needs to
+        # re-broadcast both messages -- otherwise "N rule(s) loaded" in the
+        # GUI goes stale after creating/deleting/reordering rules (caught via
+        # manual browser testing of the rule editor).
+        # ruleCount 放在 engine.status 裡，所以規則異動時兩個訊息都要重新廣播，
+        # 否則 GUI 上的「已載入 N 條規則」在新增/刪除/排序規則後會顯示過期資訊
+        # （在瀏覽器手動測試規則編輯器時發現）。
+        await manager.broadcast(RuleListResponse(rules=service.list_rules()).model_dump(by_alias=True))
+        await manager.broadcast(_status_response().model_dump(by_alias=True))
+
     async def _dispatch(websocket: WebSocket, raw: dict) -> None:
         try:
             message: ClientMessage = parse_client_message(raw)
@@ -123,15 +151,38 @@ def create_app(rules_path: str = DEFAULT_RULES_PATH) -> FastAPI:
         try:
             if isinstance(message, RuleCreateMessage):
                 service.add_rule(message.payload)
-                await manager.broadcast(RuleListResponse(rules=service.list_rules()).model_dump(by_alias=True))
+                await _broadcast_rules_and_status()
             elif isinstance(message, RuleListRequest):
                 await websocket.send_json(RuleListResponse(rules=service.list_rules()).model_dump(by_alias=True))
             elif isinstance(message, RuleDeleteMessage):
                 service.delete_rule(message.name)
-                await manager.broadcast(RuleListResponse(rules=service.list_rules()).model_dump(by_alias=True))
+                await _broadcast_rules_and_status()
             elif isinstance(message, RuleToggleMessage):
                 service.toggle_rule(message.name, message.enabled)
-                await manager.broadcast(RuleListResponse(rules=service.list_rules()).model_dump(by_alias=True))
+                await _broadcast_rules_and_status()
+            elif isinstance(message, RuleReorderMessage):
+                service.reorder_rules(message.names)
+                await _broadcast_rules_and_status()
+            elif isinstance(message, RulePreviewMessage):
+                match = await asyncio.to_thread(service.preview_trigger, message.trigger)
+                response = (
+                    RulePreviewResponse(matched=True, x=match.x, y=match.y, confidence=match.confidence)
+                    if match is not None
+                    else RulePreviewResponse(matched=False)
+                )
+                await websocket.send_json(response.model_dump(by_alias=True))
+            elif isinstance(message, CaptureCropMessage):
+                image_path, preview_b64 = await asyncio.to_thread(service.capture_crop, message.roi, message.name)
+                await websocket.send_json(
+                    CaptureCropResponse(imagePath=image_path, previewPngBase64=preview_b64, roi=message.roi).model_dump(
+                        by_alias=True
+                    )
+                )
+            elif isinstance(message, CapturePixelMessage):
+                rgb = await asyncio.to_thread(service.capture_pixel, message.x, message.y)
+                await websocket.send_json(
+                    CapturePixelResponse(x=message.x, y=message.y, targetRgb=rgb).model_dump(by_alias=True)
+                )
             elif isinstance(message, EngineStartMessage):
                 service.start()
                 await manager.broadcast(_status_response().model_dump(by_alias=True))
@@ -142,5 +193,8 @@ def create_app(rules_path: str = DEFAULT_RULES_PATH) -> FastAPI:
                 await websocket.send_json(_status_response().model_dump(by_alias=True))
         except RuleNotFoundError as exc:
             await websocket.send_json(ErrorMessage(message=f"No such rule: {exc}").model_dump())
+        except Exception as exc:  # noqa: BLE001 -- surface any failure to the client instead of dropping the connection
+            logger.exception("Error handling message: %s", raw)
+            await websocket.send_json(ErrorMessage(message=str(exc)).model_dump())
 
     return app

@@ -29,6 +29,11 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_RULES_PATH,
         help="Path to the rules.json this server reads/writes. (此伺服器讀寫的 rules.json 路徑)",
     )
+    parser.add_argument(
+        "--targets-dir",
+        default="targets",
+        help="Directory the region picker saves captured template images into. (框選工具儲存樣板圖片的資料夾)",
+    )
     parser.add_argument("--host", default="127.0.0.1", help="Bind address. (綁定位址，預設僅限本機)")
     parser.add_argument("--port", type=int, default=8765, help="Bind port. (綁定埠號)")
     parser.add_argument(
@@ -45,7 +50,7 @@ def main() -> None:
 
     enable_dpi_awareness()
 
-    app = create_app(rules_path=args.rules_path)
+    app = create_app(rules_path=args.rules_path, targets_dir=args.targets_dir)
     uvicorn.run(app, host=args.host, port=args.port, log_level=args.log_level.lower())
 
 
