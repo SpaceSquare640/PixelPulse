@@ -12,12 +12,15 @@ PixelPulse_Document/03 - 開發管理/01 - 開發階段規劃.md 描述的 Phase
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from dataclasses import dataclass, field
+from typing import Callable
 
 from core.automation.backend import InputBackend
 from core.automation.killswitch import KillSwitch
 from core.capture.screen import Region, ScreenCapture
+from core.rules.events import EngineEvent
 from core.rules.models import RuleConfig
 from core.vision.match_result import Match
 from core.vision.pixel_match import match_pixel
@@ -37,6 +40,11 @@ class _RuleState:
     last_triggered_at: float = 0.0
     trigger_count: int = 0
     template_cache: object | None = field(default=None, repr=False)
+    # Set once detection raises (e.g. a missing template image) so a single
+    # bad rule can't crash the whole scan loop or spam retries every tick.
+    # 一旦偵測拋出例外（例如樣板圖片不存在）就設為 True，避免單一壞掉的規則
+    # 讓整個掃描迴圈崩潰，或每次掃描都重複失敗。
+    is_broken: bool = False
 
     def region(self) -> Region:
         left, top, width, height = self.config.trigger.roi
@@ -64,20 +72,35 @@ class RuleEngine:
         input_backend: InputBackend,
         kill_switch: KillSwitch | None = None,
         scan_interval_s: float = 0.2,
+        on_event: Callable[[EngineEvent], None] | None = None,
     ) -> None:
         self._states = [_RuleState(config=r) for r in rules if r.enabled]
         self._capture = capture
         self._input = input_backend
         self._kill_switch = kill_switch
         self._scan_interval_s = scan_interval_s
+        self._on_event = on_event
+        # Set from a different thread than run_forever() runs on when the
+        # engine is driven by the server layer -- Event is thread-safe.
+        # 引擎由伺服器層驅動時，stop() 可能從別的執行緒呼叫，Event 本身是 thread-safe。
+        self._stop_event = threading.Event()
+
+    def stop(self) -> None:
+        """Ask a running `run_forever()` loop to stop at its next tick.
+
+        請求正在執行的 `run_forever()` 迴圈在下一次迭代時停止。
+        """
+        self._stop_event.set()
 
     def run_forever(self) -> None:
+        self._stop_event.clear()
         logger.info("Engine started with %d active rule(s).", len(self._states))
+        self._emit(EngineEvent(type="engine_started", message=f"{len(self._states)} active rule(s)"))
         if self._kill_switch:
             self._kill_switch.start()
 
         try:
-            while True:
+            while not self._stop_event.is_set():
                 # Checked every tick so Ctrl+Alt+Q stops the engine immediately.
                 # 每次迴圈都檢查，確保按下 Ctrl+Alt+Q 能立即停止引擎。
                 if self._kill_switch and self._kill_switch.is_triggered():
@@ -91,14 +114,27 @@ class RuleEngine:
         finally:
             if self._kill_switch:
                 self._kill_switch.stop()
+            logger.info("Engine stopped.")
+            self._emit(EngineEvent(type="engine_stopped"))
+
+    def _emit(self, event: EngineEvent) -> None:
+        if self._on_event:
+            self._on_event(event)
 
     def _scan_rule(self, state: _RuleState) -> None:
         now = time.time()
-        # 冷卻中或已達觸發上限就跳過，避免同一規則被連續狂觸發。
-        if state.is_on_cooldown(now) or state.has_reached_max_triggers():
+        # 冷卻中、已達觸發上限、或這條規則先前偵測時已出錯，就跳過。
+        if state.is_broken or state.is_on_cooldown(now) or state.has_reached_max_triggers():
             return
 
-        match = self._detect(state)
+        try:
+            match = self._detect(state)
+        except Exception as exc:  # noqa: BLE001 -- one bad rule must not take down the loop
+            logger.exception("Rule '%s' failed during detection; disabling it for this run.", state.config.name)
+            state.is_broken = True
+            self._emit(EngineEvent(type="rule_error", rule_name=state.config.name, message=str(exc)))
+            return
+
         if match is None:
             return
 
@@ -109,13 +145,24 @@ class RuleEngine:
             match.y,
             match.confidence,
         )
+        self._emit(
+            EngineEvent(
+                type="rule_matched",
+                rule_name=state.config.name,
+                x=match.x,
+                y=match.y,
+                confidence=match.confidence,
+            )
+        )
 
         if state.config.dry_run:
             # Dry run: log the hit but don't actually click/type anything.
             # Dry run 模式：只記錄命中，不真正執行點擊/輸入。
             logger.info("Dry run mode: skipping action for rule '%s'.", state.config.name)
+            self._emit(EngineEvent(type="rule_dry_run", rule_name=state.config.name, x=match.x, y=match.y))
         else:
             self._act(state, match)
+            self._emit(EngineEvent(type="rule_triggered", rule_name=state.config.name, x=match.x, y=match.y))
 
         state.last_triggered_at = now
         state.trigger_count += 1

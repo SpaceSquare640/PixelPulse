@@ -39,7 +39,7 @@ class ScreenCapture:
     """
 
     def __init__(self) -> None:
-        self._sct = mss.mss()
+        self._sct = mss.MSS()
 
     def grab(self, region: Region) -> np.ndarray:
         """Return the region as a BGR (no alpha) NumPy array, ready for OpenCV.

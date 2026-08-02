@@ -7,3 +7,10 @@ venv/
 build/
 dist/
 *.spec
+rules.json
+
+# gui/ (Electron + React)
+gui/node_modules/
+gui/dist/
+gui/dist-electron/
+gui/release/
