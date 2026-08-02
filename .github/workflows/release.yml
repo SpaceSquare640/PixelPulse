@@ -1,0 +1,48 @@
+name: Release Packaging
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install package with dev dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run tests
+        run: pytest -v
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build standalone CLI executable
+        run: pyinstaller --onefile --name PixelPulse-Core core/run.py
+
+      - name: Assemble release bundle
+        shell: pwsh
+        run: |
+          $bundle = "PixelPulse-Core-${{ github.event.release.tag_name }}-windows"
+          New-Item -ItemType Directory -Path $bundle | Out-Null
+          Copy-Item dist/PixelPulse-Core.exe $bundle/
+          Copy-Item rules.example.json $bundle/
+          Copy-Item -Recurse targets $bundle/targets
+          Copy-Item README.md, README.zh-TW.md $bundle/
+          Compress-Archive -Path $bundle -DestinationPath "$bundle.zip"
+
+      - name: Upload release asset
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload ${{ github.event.release.tag_name }} "PixelPulse-Core-${{ github.event.release.tag_name }}-windows.zip"

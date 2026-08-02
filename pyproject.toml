@@ -1,0 +1,21 @@
+[project]
+name = "pixelpulse-core"
+version = "0.1.0"
+description = "PixelPulse core engine: screen capture, vision matching, and input automation"
+requires-python = ">=3.11"
+dependencies = [
+    "mss>=9.0.1",
+    "opencv-python>=4.9.0",
+    "numpy>=1.26.0",
+    "pyautogui>=0.9.54",
+    "pynput>=1.7.6",
+    "pydantic>=2.6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["core*"]
