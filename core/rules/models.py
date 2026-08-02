@@ -40,15 +40,56 @@ class TriggerConfig(BaseModel):
     tolerance: int = 10
 
 
+class MacroStep(BaseModel):
+    """One step of a multi-step action (Phase 4). See core/rules/macro.py for
+    execution semantics.
+
+    多步驟動作（巨集，Phase 4）裡的其中一步。執行邏輯見 core/rules/macro.py。
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    kind: Literal["click", "double_click", "key", "type", "wait_for"]
+
+    # click / double_click / wait_for: locate `target` via template match
+    # within `roi` (defaults to the whole virtual desktop if omitted).
+    # click / double_click / wait_for：在 `roi` 範圍內（未指定則預設整個虛擬桌面）
+    # 用樣板匹配找出 `target` 的位置。
+    target: str | None = None
+    roi: RoiTuple | None = None
+    threshold: float = 0.85
+
+    # click / double_click fallback when `target` is not set: click a fixed
+    # absolute screen coordinate instead of finding one.
+    # click / double_click 在沒有設定 `target` 時的備援：直接點擊固定的絕對座標。
+    x: int | None = None
+    y: int | None = None
+    button: str = "left"
+
+    # key / type
+    key: str | None = None
+    text: str | None = None
+
+    # timing / retry -- 時間與重試設定
+    delay_before_ms: int = Field(default=0, alias="delayBeforeMs")
+    timeout_ms: int = Field(default=5000, alias="timeoutMs")
+    on_timeout: Literal["abort", "skip"] = Field(default="abort", alias="onTimeout")
+    retry_count: int = Field(default=0, alias="retryCount")
+    retry_delay_ms: int = Field(default=500, alias="retryDelayMs")
+
+
 class ActionConfig(BaseModel):
     """命中觸發條件後要執行的動作。"""
 
     model_config = ConfigDict(populate_by_name=True)
 
-    kind: Literal["click", "double_click", "key", "type"]
+    kind: Literal["click", "double_click", "key", "type", "macro"]
     button: str = "left"
     key: str | None = None
     text: str | None = None
+    # Only set when kind == "macro" -- see MacroStep / core/rules/macro.py.
+    # 只有 kind == "macro" 時才會用到 —— 見 MacroStep / core/rules/macro.py。
+    steps: list[MacroStep] | None = None
 
 
 class RuleConfig(BaseModel):

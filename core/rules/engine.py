@@ -21,6 +21,7 @@ from core.automation.backend import InputBackend
 from core.automation.killswitch import KillSwitch
 from core.capture.screen import Region, ScreenCapture
 from core.rules.events import EngineEvent
+from core.rules.macro import MacroExecutor
 from core.rules.models import RuleConfig
 from core.vision.match_result import Match
 from core.vision.pixel_match import match_pixel
@@ -80,6 +81,7 @@ class RuleEngine:
         self._kill_switch = kill_switch
         self._scan_interval_s = scan_interval_s
         self._on_event = on_event
+        self._macro_executor = MacroExecutor(capture, input_backend)
         # Set from a different thread than run_forever() runs on when the
         # engine is driven by the server layer -- Event is thread-safe.
         # 引擎由伺服器層驅動時，stop() 可能從別的執行緒呼叫，Event 本身是 thread-safe。
@@ -161,8 +163,20 @@ class RuleEngine:
             logger.info("Dry run mode: skipping action for rule '%s'.", state.config.name)
             self._emit(EngineEvent(type="rule_dry_run", rule_name=state.config.name, x=match.x, y=match.y))
         else:
-            self._act(state, match)
-            self._emit(EngineEvent(type="rule_triggered", rule_name=state.config.name, x=match.x, y=match.y))
+            try:
+                self._act(state, match)
+            except Exception as exc:  # noqa: BLE001 -- a failed action (e.g. a macro step timeout) must not crash the loop
+                # Unlike a detection failure, this is not marked is_broken: a
+                # macro step timing out once (e.g. the next screen hadn't
+                # loaded yet) doesn't mean it will fail every time, so the
+                # rule is allowed to try again after its normal cooldown.
+                # 跟偵測失敗不同，這裡不會設定 is_broken：巨集某一步這次逾時
+                # （例如下一個畫面還沒載入完成），不代表下次一定還會失敗，
+                # 所以規則在正常冷卻時間過後仍會再嘗試一次。
+                logger.exception("Rule '%s' failed while executing its action.", state.config.name)
+                self._emit(EngineEvent(type="rule_error", rule_name=state.config.name, message=str(exc)))
+            else:
+                self._emit(EngineEvent(type="rule_triggered", rule_name=state.config.name, x=match.x, y=match.y))
 
         state.last_triggered_at = now
         state.trigger_count += 1
@@ -213,5 +227,7 @@ class RuleEngine:
             self._input.key_press(action.key or "")
         elif action.kind == "type":
             self._input.type_text(action.text or "")
+        elif action.kind == "macro":
+            self._macro_executor.run(action.steps or [])
         else:
             raise ValueError(f"Unknown action kind: {action.kind}")

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import type { ActionKind, RuleConfig, TriggerConfig } from '../protocol'
+import type { ActionKind, MacroStep, RuleConfig, TriggerConfig } from '../protocol'
+import { MacroStepEditor } from './MacroStepEditor'
 
 interface CaptureCropResult {
   imagePath: string
@@ -47,6 +48,7 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
   const [button, setButton] = useState('left')
   const [key, setKey] = useState('')
   const [text, setText] = useState('')
+  const [macroSteps, setMacroSteps] = useState<MacroStep[]>([])
 
   const [cooldownMs, setCooldownMs] = useState(1000)
   const [maxTriggers, setMaxTriggers] = useState<number | ''>('')
@@ -140,6 +142,7 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
         ...(actionKind === 'click' || actionKind === 'double_click' ? { button } : {}),
         ...(actionKind === 'key' ? { key } : {}),
         ...(actionKind === 'type' ? { text } : {}),
+        ...(actionKind === 'macro' ? { steps: macroSteps } : {}),
       },
       cooldownMs,
       maxTriggers: maxTriggers === '' ? null : Number(maxTriggers),
@@ -151,7 +154,11 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
   const step1Complete =
     triggerKind === 'template' ? !!(roi && image) : !!(roi && pixelPoint && targetRgb)
   const nameIsValid = name.trim().length > 0 && !existingNames.includes(name.trim())
-  const canSave = step1Complete && nameIsValid
+  const macroStepsNeedingTarget = ['click', 'double_click', 'wait_for']
+  const macroComplete =
+    actionKind !== 'macro' ||
+    (macroSteps.length > 0 && macroSteps.every((s) => !macroStepsNeedingTarget.includes(s.kind) || !!s.target))
+  const canSave = step1Complete && nameIsValid && macroComplete
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -272,6 +279,7 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
                   <option value="double_click">Double-click</option>
                   <option value="key">Press key</option>
                   <option value="type">Type text</option>
+                  <option value="macro">Macro (multi-step)</option>
                 </select>
               </label>
 
@@ -298,6 +306,10 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
                   <span>Text to type</span>
                   <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} />
                 </label>
+              )}
+
+              {actionKind === 'macro' && (
+                <MacroStepEditor steps={macroSteps} onChange={setMacroSteps} captureCrop={captureCrop} />
               )}
             </div>
           )}

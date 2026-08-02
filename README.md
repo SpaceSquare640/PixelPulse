@@ -1,20 +1,21 @@
-# PixelPulse — Core Engine + GUI (Phase 3)
+# PixelPulse — Core Engine + GUI (Phase 4)
 
 繁體中文版：[README.zh-TW.md](README.zh-TW.md)
 
 Watches a screen region, matches it against a target image or pixel colour,
-and triggers a mouse/keyboard action when it finds a hit. Two ways to run
-it:
+and triggers a mouse/keyboard action — including multi-step macros — when it
+finds a hit. Two ways to run it:
 
 - **CLI** (Phase 1, still works standalone): drive the engine straight from
   a `rules.json` file, no GUI required.
-- **GUI** (Phase 2+3): an Electron + React front end talks to the same
+- **GUI** (Phase 2-4): an Electron + React front end talks to the same
   engine over a local WebSocket — connection/engine status, a rule editor
-  with an on-screen region/point picker and live match preview, a
-  drag-to-reorder rule list with thumbnails, and a live activity log.
+  with an on-screen region/point picker, live match preview, a macro step
+  editor, a drag-to-reorder rule list with thumbnails, and a live activity
+  log.
 
 See the project plan in `PixelPulse_Document/` for the full architecture and
-roadmap (Phase 4+ adds macros and native acceleration).
+roadmap (Phase 5+ adds native/C++ acceleration and packaging).
 
 ## Setup (Python core)
 
@@ -67,17 +68,36 @@ Click **New Rule** to open the editor:
    release. The image/pixel is captured immediately and a thumbnail/colour
    swatch shows up. Use **Test Match** to check it detects correctly before
    saving.
-2. **Action** — click, double-click, key press, or typed text.
+2. **Action** — click, double-click, key press, typed text, or **Macro
+   (multi-step)**.
 3. **Safety** — name, cooldown, optional trigger limit, and dry-run.
 
 New rules always start in dry-run — flip the checkbox off in the rule list's
 toggle once you trust it. Drag rule cards by the handle to reorder them
 (rules are scanned in list order).
 
+### Macros (multi-step actions)
+
+Pick "Macro (multi-step)" as the action to chain several steps together
+instead of one:
+
+- **Click** / **Double-click** — pick a target image on screen (like the
+  trigger step); the macro re-locates it fresh at run time and clicks it.
+- **Wait for image** — pause until a target image appears (e.g. wait for the
+  next screen to load) before continuing.
+- **Press key** / **Type text** — same as the single-step actions.
+
+Each step has a delay-before, and the target-locating steps (click,
+double-click, wait for image) have a timeout and retry count — if the
+target still isn't found after retrying, the macro aborts (by default) and
+reports a `rule_error` you'll see in the activity log; this can be changed
+to skip that step instead by editing `"onTimeout": "skip"` directly in
+`rules.json` (not yet exposed as a toggle in the editor UI).
+
 ## Tests
 
 ```bash
-pytest       # Python: core engine + server (34 tests)
+pytest       # Python: core engine + server (43 tests)
 cd gui && npm run build   # TypeScript: type-checks the renderer
 ```
 
@@ -88,7 +108,10 @@ core/
 ├─ capture/       # screen grabbing (mss)
 ├─ vision/        # template matching + pixel colour matching (OpenCV/NumPy)
 ├─ automation/     # mouse/keyboard backend + emergency-stop hotkey
-├─ rules/         # rule schema, JSON loader, main scan loop, engine events
+├─ rules/
+│  ├─ models.py    # rule/trigger/action/macro-step schema
+│  ├─ engine.py     # main scan loop, engine events
+│  └─ macro.py       # MacroExecutor: runs a multi-step action
 ├─ server/        # FastAPI + WebSocket server: engine control, rule CRUD,
 │                  # region/point capture, live match preview, static
 │                  # /targets file serving for GUI thumbnails
@@ -102,6 +125,7 @@ gui/
 └─ src/
    ├─ components/
    │  ├─ RuleEditor.tsx      # 3-step new-rule wizard
+   │  ├─ MacroStepEditor.tsx  # step list editor for the "macro" action
    │  ├─ PickerOverlay.tsx   # renders inside the transparent picker window
    │  ├─ RuleList.tsx        # card list, thumbnails, drag-to-reorder
    │  ├─ EngineControls.tsx / LogPanel.tsx / StatusBar.tsx

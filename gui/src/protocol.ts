@@ -6,7 +6,8 @@
 // 目前沒有自動產生程式碼，兩邊需要手動保持同步。
 
 export type TriggerKind = 'template' | 'pixel'
-export type ActionKind = 'click' | 'double_click' | 'key' | 'type'
+export type ActionKind = 'click' | 'double_click' | 'key' | 'type' | 'macro'
+export type MacroStepKind = 'click' | 'double_click' | 'key' | 'type' | 'wait_for'
 
 export interface TriggerConfig {
   kind: TriggerKind
@@ -19,11 +20,35 @@ export interface TriggerConfig {
   tolerance?: number
 }
 
+// Mirrors core/rules/models.py's MacroStep (Phase 4).
+export interface MacroStep {
+  kind: MacroStepKind
+  // click / double_click / wait_for: locate `target` via template match.
+  target?: string | null
+  roi?: [number, number, number, number] | null
+  threshold?: number
+  // click / double_click fallback when `target` is not set.
+  x?: number | null
+  y?: number | null
+  button?: string
+  // key / type
+  key?: string | null
+  text?: string | null
+  // timing / retry
+  delayBeforeMs?: number
+  timeoutMs?: number
+  onTimeout?: 'abort' | 'skip'
+  retryCount?: number
+  retryDelayMs?: number
+}
+
 export interface ActionConfig {
   kind: ActionKind
   button?: string
   key?: string | null
   text?: string | null
+  // Only set when kind === 'macro'.
+  steps?: MacroStep[] | null
 }
 
 export interface RuleConfig {
