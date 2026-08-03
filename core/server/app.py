@@ -37,6 +37,7 @@ from core.server.protocol import (
     EngineStopMessage,
     ErrorMessage,
     RuleCreateMessage,
+    RuleDeleteAllMessage,
     RuleDeleteMessage,
     RuleListRequest,
     RuleListResponse,
@@ -44,6 +45,7 @@ from core.server.protocol import (
     RulePreviewResponse,
     RuleReorderMessage,
     RuleToggleMessage,
+    RuleUpdateMessage,
     parse_client_message,
 )
 from core.server.service import DEFAULT_MAX_WORKERS, EngineService, RuleNotFoundError
@@ -160,10 +162,16 @@ def create_app(
             if isinstance(message, RuleCreateMessage):
                 service.add_rule(message.payload)
                 await _broadcast_rules_and_status()
+            elif isinstance(message, RuleUpdateMessage):
+                service.update_rule(message.original_name, message.payload)
+                await _broadcast_rules_and_status()
             elif isinstance(message, RuleListRequest):
                 await websocket.send_json(RuleListResponse(rules=service.list_rules()).model_dump(by_alias=True))
             elif isinstance(message, RuleDeleteMessage):
                 service.delete_rule(message.name)
+                await _broadcast_rules_and_status()
+            elif isinstance(message, RuleDeleteAllMessage):
+                service.delete_all_rules()
                 await _broadcast_rules_and_status()
             elif isinstance(message, RuleToggleMessage):
                 service.toggle_rule(message.name, message.enabled)

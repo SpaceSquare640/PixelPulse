@@ -88,8 +88,10 @@ export interface EngineEvent {
 
 export type ClientMessage =
   | { type: 'rule.create'; payload: RuleConfig }
+  | { type: 'rule.update'; originalName: string; payload: RuleConfig }
   | { type: 'rule.list' }
   | { type: 'rule.delete'; name: string }
+  | { type: 'rule.deleteAll' }
   | { type: 'rule.toggle'; name: string; enabled: boolean }
   | { type: 'rule.reorder'; names: string[] }
   | { type: 'rule.preview'; trigger: TriggerConfig }

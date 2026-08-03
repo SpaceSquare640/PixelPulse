@@ -45,6 +45,53 @@ def test_delete_missing_rule_raises(service):
         service.delete_rule("nope")
 
 
+def test_delete_all_rules_clears_everything(service):
+    service.add_rule(_RULE.model_copy(update={"name": "A"}))
+    service.add_rule(_RULE.model_copy(update={"name": "B"}))
+
+    service.delete_all_rules()
+
+    assert service.list_rules() == []
+
+
+def test_update_rule_replaces_in_place(service):
+    a = _RULE.model_copy(update={"name": "A", "cooldown_ms": 1000})
+    b = _RULE.model_copy(update={"name": "B"})
+    service.add_rule(a)
+    service.add_rule(b)
+
+    updated = a.model_copy(update={"cooldown_ms": 5000})
+    service.update_rule("A", updated)
+
+    names = [r.name for r in service.list_rules()]
+    assert names == ["A", "B"]  # position preserved
+    assert service.list_rules()[0].cooldown_ms == 5000
+
+
+def test_update_rule_allows_rename(service):
+    service.add_rule(_RULE.model_copy(update={"name": "A"}))
+
+    renamed = _RULE.model_copy(update={"name": "A (renamed)"})
+    service.update_rule("A", renamed)
+
+    assert [r.name for r in service.list_rules()] == ["A (renamed)"]
+
+
+def test_update_rule_missing_raises(service):
+    with pytest.raises(RuleNotFoundError):
+        service.update_rule("nope", _RULE)
+
+
+def test_update_rule_rejects_rename_colliding_with_another_rule(service):
+    a = _RULE.model_copy(update={"name": "A"})
+    b = _RULE.model_copy(update={"name": "B"})
+    service.add_rule(a)
+    service.add_rule(b)
+
+    with pytest.raises(ValueError, match="already exists"):
+        service.update_rule("A", a.model_copy(update={"name": "B"}))
+
+
 def test_toggle_rule_updates_enabled_flag(service):
     service.add_rule(_RULE)
 

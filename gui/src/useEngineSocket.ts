@@ -157,7 +157,12 @@ export function useEngineSocket() {
   const startEngine = useCallback(() => send({ type: 'engine.start' }), [send])
   const stopEngine = useCallback(() => send({ type: 'engine.stop' }), [send])
   const createRule = useCallback((payload: RuleConfig) => send({ type: 'rule.create', payload }), [send])
+  const updateRule = useCallback(
+    (originalName: string, payload: RuleConfig) => send({ type: 'rule.update', originalName, payload }),
+    [send],
+  )
   const deleteRule = useCallback((name: string) => send({ type: 'rule.delete', name }), [send])
+  const deleteAllRules = useCallback(() => send({ type: 'rule.deleteAll' }), [send])
   const toggleRule = useCallback(
     (name: string, enabled: boolean) => send({ type: 'rule.toggle', name, enabled }),
     [send],
@@ -209,7 +214,9 @@ export function useEngineSocket() {
     startEngine,
     stopEngine,
     createRule,
+    updateRule,
     deleteRule,
+    deleteAllRules,
     toggleRule,
     reorderRules,
     captureCrop,

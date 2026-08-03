@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useLanguage } from '../i18n/LanguageContext'
 import type { ActionKind, MacroStep, RuleConfig, TriggerConfig } from '../protocol'
+import { HTTP_ORIGIN } from '../serverConfig'
 import { MacroStepEditor } from './MacroStepEditor'
 
 interface CaptureCropResult {
@@ -26,8 +27,14 @@ interface PreviewResult {
 
 interface Props {
   existingNames: string[]
+  // When set, the editor pre-fills every field from this rule and Save
+  // updates it in place instead of creating a new one.
+  // 有設定時，編輯器會用這條規則的既有值預先帶入每個欄位，存檔時會原地更新
+  // 這條規則，而不是新增一條。
+  existingRule?: RuleConfig | null
   onClose: () => void
   onSave: (rule: RuleConfig) => void
+  onUpdate?: (originalName: string, rule: RuleConfig) => void
   captureCrop: (roi: [number, number, number, number], name: string) => Promise<CaptureCropResult>
   capturePixel: (x: number, y: number) => Promise<CapturePixelResult>
   importImage: (path: string, name: string) => Promise<ImportImageResult>
@@ -36,14 +43,29 @@ interface Props {
 
 const STEP_KEYS = ['stepTrigger', 'stepAction', 'stepSafety'] as const
 
-export function RuleEditor({ existingNames, onClose, onSave, captureCrop, capturePixel, importImage, previewTrigger }: Props) {
+function imageUrlFor(path: string): string {
+  const filename = path.split('/').pop()
+  return `${HTTP_ORIGIN}/targets/${filename}`
+}
+
+export function RuleEditor({
+  existingNames,
+  existingRule,
+  onClose,
+  onSave,
+  onUpdate,
+  captureCrop,
+  capturePixel,
+  importImage,
+  previewTrigger,
+}: Props) {
   const { t } = useLanguage()
   const [step, setStep] = useState(0)
 
-  const [name, setName] = useState('')
-  const [triggerKind, setTriggerKind] = useState<'template' | 'pixel'>('template')
+  const [name, setName] = useState(existingRule?.name ?? '')
+  const [triggerKind, setTriggerKind] = useState<'template' | 'pixel'>(existingRule?.trigger.kind ?? 'template')
   const [imageSource, setImageSource] = useState<'crop' | 'file'>('crop')
-  const [roi, setRoi] = useState<[number, number, number, number] | null>(null)
+  const [roi, setRoi] = useState<[number, number, number, number] | null>(existingRule?.trigger.roi ?? null)
   // Defaults to true: a template match should find its target wherever it
   // appears, not just inside the exact box it happened to be captured from
   // -- a fixed region silently stops matching the instant the target moves.
@@ -53,26 +75,40 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
   // 在當初擷取時剛好框選的那個區域 —— 目標一旦移動位置，固定區域就會立刻
   // 偵測不到。想要縮小掃描範圍換取速度、減少誤判的進階使用者，仍然可以自己
   // 取消勾選。
-  const [wholeScreen, setWholeScreen] = useState(true)
-  const [image, setImage] = useState<string | null>(null)
-  const [previewImage, setPreviewImage] = useState<string | null>(null)
-  const [threshold, setThreshold] = useState(0.85)
-  const [pixelPoint, setPixelPoint] = useState<{ x: number; y: number } | null>(null)
-  const [targetRgb, setTargetRgb] = useState<[number, number, number] | null>(null)
-  const [tolerance, setTolerance] = useState(10)
+  const [wholeScreen, setWholeScreen] = useState(
+    existingRule ? existingRule.trigger.roi == null : true,
+  )
+  const [image, setImage] = useState<string | null>(
+    existingRule?.trigger.kind === 'template' ? (existingRule.trigger.image ?? null) : null,
+  )
+  const [previewSrc, setPreviewSrc] = useState<string | null>(
+    existingRule?.trigger.kind === 'template' && existingRule.trigger.image
+      ? imageUrlFor(existingRule.trigger.image)
+      : null,
+  )
+  const [threshold, setThreshold] = useState(existingRule?.trigger.threshold ?? 0.85)
+  const [pixelPoint, setPixelPoint] = useState<{ x: number; y: number } | null>(
+    existingRule?.trigger.kind === 'pixel' && existingRule.trigger.roi
+      ? { x: existingRule.trigger.roi[0] + (existingRule.trigger.pixelX ?? 0), y: existingRule.trigger.roi[1] + (existingRule.trigger.pixelY ?? 0) }
+      : null,
+  )
+  const [targetRgb, setTargetRgb] = useState<[number, number, number] | null>(
+    existingRule?.trigger.kind === 'pixel' ? (existingRule.trigger.targetRgb ?? null) : null,
+  )
+  const [tolerance, setTolerance] = useState(existingRule?.trigger.tolerance ?? 10)
   const [picking, setPicking] = useState(false)
   const [captureError, setCaptureError] = useState<string | null>(null)
 
-  const [actionKind, setActionKind] = useState<ActionKind>('click')
-  const [button, setButton] = useState('left')
-  const [key, setKey] = useState('')
-  const [text, setText] = useState('')
-  const [macroSteps, setMacroSteps] = useState<MacroStep[]>([])
+  const [actionKind, setActionKind] = useState<ActionKind>(existingRule?.action.kind ?? 'click')
+  const [button, setButton] = useState(existingRule?.action.button ?? 'left')
+  const [key, setKey] = useState(existingRule?.action.key ?? '')
+  const [text, setText] = useState(existingRule?.action.text ?? '')
+  const [macroSteps, setMacroSteps] = useState<MacroStep[]>(existingRule?.action.steps ?? [])
 
-  const [cooldownMs, setCooldownMs] = useState(1000)
-  const [maxTriggers, setMaxTriggers] = useState<number | ''>('')
-  const [oncePerAppearance, setOncePerAppearance] = useState(false)
-  const [dryRun, setDryRun] = useState(true)
+  const [cooldownMs, setCooldownMs] = useState(existingRule?.cooldownMs ?? 1000)
+  const [maxTriggers, setMaxTriggers] = useState<number | ''>(existingRule?.maxTriggers ?? '')
+  const [oncePerAppearance, setOncePerAppearance] = useState(existingRule?.oncePerAppearance ?? false)
+  const [dryRun, setDryRun] = useState(existingRule?.dryRun ?? true)
 
   const [previewResult, setPreviewResult] = useState<PreviewResult | null>(null)
   const [previewing, setPreviewing] = useState(false)
@@ -110,7 +146,7 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
       const result = await captureCrop(roiTuple, name || 'target')
       setRoi(roiTuple)
       setImage(result.imagePath)
-      setPreviewImage(result.previewPngBase64)
+      setPreviewSrc(`data:image/png;base64,${result.previewPngBase64}`)
       setPreviewResult(null)
     } catch (err) {
       setCaptureError(err instanceof Error ? err.message : String(err))
@@ -128,7 +164,7 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
       if (!path) return
       const result = await importImage(path, name || 'target')
       setImage(result.imagePath)
-      setPreviewImage(result.previewPngBase64)
+      setPreviewSrc(`data:image/png;base64,${result.previewPngBase64}`)
       // An uploaded file isn't tied to any particular screen region.
       setRoi(null)
       setPreviewResult(null)
@@ -193,11 +229,17 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
       oncePerAppearance,
       dryRun,
     }
-    onSave(rule)
+    if (existingRule && onUpdate) {
+      onUpdate(existingRule.name, rule)
+    } else {
+      onSave(rule)
+    }
   }
 
   const step1Complete = triggerKind === 'template' ? !!image : !!(roi && pixelPoint && targetRgb)
-  const nameIsValid = name.trim().length > 0 && !existingNames.includes(name.trim())
+  const trimmedName = name.trim()
+  const nameIsValid =
+    trimmedName.length > 0 && (trimmedName === existingRule?.name || !existingNames.includes(trimmedName))
   const macroStepsNeedingTarget = ['click', 'double_click', 'wait_for']
   const macroComplete =
     actionKind !== 'macro' ||
@@ -208,7 +250,7 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal__header">
-          <h2>{t('ruleEditor.title')}</h2>
+          <h2>{existingRule ? t('ruleEditor.editTitle') : t('ruleEditor.title')}</h2>
           <div className="stepper">
             {STEP_KEYS.map((key, i) => (
               <span key={key} className={`stepper__item ${i === step ? 'stepper__item--active' : ''}`}>
@@ -259,7 +301,7 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
                         onClick={() => {
                           setImageSource('crop')
                           setImage(null)
-                          setPreviewImage(null)
+                          setPreviewSrc(null)
                           setRoi(null)
                           setPreviewResult(null)
                         }}
@@ -272,7 +314,7 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
                         onClick={() => {
                           setImageSource('file')
                           setImage(null)
-                          setPreviewImage(null)
+                          setPreviewSrc(null)
                           setRoi(null)
                           setPreviewResult(null)
                         }}
@@ -292,8 +334,8 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
                     </button>
                   )}
 
-                  {previewImage && (
-                    <img className="capture-preview" src={`data:image/png;base64,${previewImage}`} alt={t('ruleEditor.capturedTargetAlt')} />
+                  {previewSrc && (
+                    <img className="capture-preview" src={previewSrc} alt={t('ruleEditor.capturedTargetAlt')} />
                   )}
 
                   {imageSource === 'crop' ? (

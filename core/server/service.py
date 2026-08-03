@@ -103,11 +103,32 @@ class EngineService:
         self._persist()
         return self.list_rules()
 
+    def update_rule(self, original_name: str, rule: RuleConfig) -> list[RuleConfig]:
+        """Replace a rule in place (same position in the list), identified by
+        its *current* name -- `rule.name` may be a rename.
+
+        原地取代一條規則（清單位置不變），用它「目前」的名稱識別 —— `rule.name`
+        可能是改過的新名字。
+        """
+        for i, existing in enumerate(self._rules):
+            if existing.name == original_name:
+                if rule.name != original_name and any(r.name == rule.name for r in self._rules if r.name != original_name):
+                    raise ValueError(f"A rule named {rule.name!r} already exists.")
+                self._rules[i] = rule
+                self._persist()
+                return self.list_rules()
+        raise RuleNotFoundError(original_name)
+
     def delete_rule(self, name: str) -> list[RuleConfig]:
         before = len(self._rules)
         self._rules = [r for r in self._rules if r.name != name]
         if len(self._rules) == before:
             raise RuleNotFoundError(name)
+        self._persist()
+        return self.list_rules()
+
+    def delete_all_rules(self) -> list[RuleConfig]:
+        self._rules = []
         self._persist()
         return self.list_rules()
 

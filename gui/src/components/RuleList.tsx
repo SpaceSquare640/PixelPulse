@@ -6,7 +6,9 @@ import { HTTP_ORIGIN } from '../serverConfig'
 interface Props {
   rules: RuleConfig[]
   onToggle: (name: string, enabled: boolean) => void
+  onEdit: (rule: RuleConfig) => void
   onDelete: (name: string) => void
+  onDeleteAll: () => void
   onReorder: (names: string[]) => void
   onNewRule: () => void
 }
@@ -27,7 +29,7 @@ function thumbnailFor(rule: RuleConfig) {
   return <span className="rule-card__thumb rule-card__thumb--empty" />
 }
 
-export function RuleList({ rules, onToggle, onDelete, onReorder, onNewRule }: Props) {
+export function RuleList({ rules, onToggle, onEdit, onDelete, onDeleteAll, onReorder, onNewRule }: Props) {
   const [dragName, setDragName] = useState<string | null>(null)
   const { t } = useLanguage()
 
@@ -42,13 +44,27 @@ export function RuleList({ rules, onToggle, onDelete, onReorder, onNewRule }: Pr
     setDragName(null)
   }
 
+  function handleDeleteAll() {
+    if (rules.length === 0) return
+    if (window.confirm(t('ruleList.confirmDeleteAll', { count: rules.length }))) {
+      onDeleteAll()
+    }
+  }
+
   return (
     <section className="panel">
       <div className="panel-header">
         <h2>{t('ruleList.title')}</h2>
-        <button type="button" className="button button--primary" onClick={onNewRule}>
-          {t('ruleList.newRule')}
-        </button>
+        <div className="panel-header__actions">
+          {rules.length > 0 && (
+            <button type="button" className="button button--ghost" onClick={handleDeleteAll}>
+              {t('ruleList.deleteAll')}
+            </button>
+          )}
+          <button type="button" className="button button--primary" onClick={onNewRule}>
+            {t('ruleList.newRule')}
+          </button>
+        </div>
       </div>
       {rules.length === 0 ? (
         <p className="muted">{t('ruleList.empty')}</p>
@@ -85,9 +101,14 @@ export function RuleList({ rules, onToggle, onDelete, onReorder, onNewRule }: Pr
                   {rule.dryRun && <span className="badge badge--warning">{t('ruleList.badgeDryRun')}</span>}
                 </div>
               </div>
-              <button type="button" className="button button--ghost" onClick={() => onDelete(rule.name)}>
-                {t('common.delete')}
-              </button>
+              <div className="rule-card__actions">
+                <button type="button" className="button button--ghost" onClick={() => onEdit(rule)}>
+                  {t('common.edit')}
+                </button>
+                <button type="button" className="button button--ghost" onClick={() => onDelete(rule.name)}>
+                  {t('common.delete')}
+                </button>
+              </div>
             </li>
           ))}
         </ul>

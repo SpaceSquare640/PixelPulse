@@ -68,6 +68,47 @@ def test_rule_create_also_refreshes_rule_count_in_status(client):
         assert status["ruleCount"] == 1
 
 
+def test_rule_update_replaces_in_place(client):
+    with client.websocket_connect("/ws") as ws:
+        ws.receive_json()
+        ws.receive_json()
+
+        ws.send_json({"type": "rule.create", "payload": _RULE_PAYLOAD})
+        _receive_until(ws, "rule.list")
+
+        updated_payload = {**_RULE_PAYLOAD, "cooldownMs": 9999}
+        ws.send_json({"type": "rule.update", "originalName": "Click confirm", "payload": updated_payload})
+        updated = _receive_until(ws, "rule.list")
+
+        assert len(updated["rules"]) == 1
+        assert updated["rules"][0]["cooldownMs"] == 9999
+
+
+def test_rule_update_missing_returns_error(client):
+    with client.websocket_connect("/ws") as ws:
+        ws.receive_json()
+        ws.receive_json()
+
+        ws.send_json({"type": "rule.update", "originalName": "nope", "payload": _RULE_PAYLOAD})
+        error = ws.receive_json()
+
+        assert error["type"] == "error"
+
+
+def test_rule_delete_all_clears_list(client):
+    with client.websocket_connect("/ws") as ws:
+        ws.receive_json()
+        ws.receive_json()
+
+        ws.send_json({"type": "rule.create", "payload": _RULE_PAYLOAD})
+        _receive_until(ws, "rule.list")
+
+        ws.send_json({"type": "rule.deleteAll"})
+        cleared = _receive_until(ws, "rule.list")
+
+        assert cleared["rules"] == []
+
+
 def test_engine_start_stop_round_trip(client):
     # No rules exist, so starting the engine never touches the screen or
     # input backend -- safe to exercise for real here.

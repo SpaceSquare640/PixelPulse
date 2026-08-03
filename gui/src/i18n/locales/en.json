@@ -4,6 +4,7 @@
     "back": "Back",
     "next": "Next",
     "delete": "Delete",
+    "edit": "Edit",
     "close": "Close"
   },
   "statusBar": {
@@ -22,6 +23,8 @@
   "ruleList": {
     "title": "Rules",
     "newRule": "New Rule",
+    "deleteAll": "Delete All",
+    "confirmDeleteAll": "Delete all {count} rule(s)? This can't be undone.",
     "empty": "No rules yet. Click \"New Rule\" to create one.",
     "dragToReorder": "Drag to reorder",
     "badgeDryRun": "dry-run",
@@ -42,6 +45,7 @@
   },
   "ruleEditor": {
     "title": "New Rule",
+    "editTitle": "Edit Rule",
     "stepTrigger": "Trigger",
     "stepAction": "Action",
     "stepSafety": "Safety",

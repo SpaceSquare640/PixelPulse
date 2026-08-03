@@ -5,6 +5,7 @@ import { LogPanel } from './components/LogPanel'
 import { RuleEditor } from './components/RuleEditor'
 import { RuleList } from './components/RuleList'
 import { StatusBar } from './components/StatusBar'
+import type { RuleConfig } from './protocol'
 import { useEngineSocket } from './useEngineSocket'
 
 function App() {
@@ -17,7 +18,9 @@ function App() {
     startEngine,
     stopEngine,
     createRule,
+    updateRule,
     deleteRule,
+    deleteAllRules,
     toggleRule,
     reorderRules,
     captureCrop,
@@ -26,8 +29,11 @@ function App() {
     previewTrigger,
   } = useEngineSocket()
 
-  const [editorOpen, setEditorOpen] = useState(false)
+  // null = closed, 'new' = creating a rule, a RuleConfig = editing that rule.
+  const [editorState, setEditorState] = useState<RuleConfig | 'new' | null>(null)
   const [helpOpen, setHelpOpen] = useState(false)
+
+  const editingRule = editorState === 'new' || editorState === null ? null : editorState
 
   return (
     <div className="app">
@@ -44,21 +50,28 @@ function App() {
         <RuleList
           rules={rules}
           onToggle={toggleRule}
+          onEdit={(rule) => setEditorState(rule)}
           onDelete={deleteRule}
+          onDeleteAll={deleteAllRules}
           onReorder={reorderRules}
-          onNewRule={() => setEditorOpen(true)}
+          onNewRule={() => setEditorState('new')}
         />
 
         <LogPanel events={events} />
       </main>
 
-      {editorOpen && (
+      {editorState !== null && (
         <RuleEditor
           existingNames={rules.map((r) => r.name)}
-          onClose={() => setEditorOpen(false)}
+          existingRule={editingRule}
+          onClose={() => setEditorState(null)}
           onSave={(rule) => {
             createRule(rule)
-            setEditorOpen(false)
+            setEditorState(null)
+          }}
+          onUpdate={(originalName, rule) => {
+            updateRule(originalName, rule)
+            setEditorState(null)
           }}
           captureCrop={captureCrop}
           capturePixel={capturePixel}

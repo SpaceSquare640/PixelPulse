@@ -21,6 +21,22 @@ class RuleCreateMessage(BaseModel):
     payload: RuleConfig
 
 
+class RuleUpdateMessage(BaseModel):
+    """Replace an existing rule in place (same position in the list),
+    identified by its *current* name -- `payload.name` may differ if the
+    user renamed it while editing.
+
+    原地取代一條既有規則（在清單裡的位置不變），用它「目前」的名稱識別 ——
+    如果使用者編輯時順便改了名字，`payload.name` 可能會不一樣。
+    """
+
+    type: Literal["rule.update"] = "rule.update"
+    original_name: str = Field(alias="originalName")
+    payload: RuleConfig
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
 class RuleListRequest(BaseModel):
     type: Literal["rule.list"] = "rule.list"
 
@@ -28,6 +44,10 @@ class RuleListRequest(BaseModel):
 class RuleDeleteMessage(BaseModel):
     type: Literal["rule.delete"] = "rule.delete"
     name: str
+
+
+class RuleDeleteAllMessage(BaseModel):
+    type: Literal["rule.deleteAll"] = "rule.deleteAll"
 
 
 class RuleToggleMessage(BaseModel):
@@ -104,8 +124,10 @@ class CaptureImportMessage(BaseModel):
 
 ClientMessage = Union[
     RuleCreateMessage,
+    RuleUpdateMessage,
     RuleListRequest,
     RuleDeleteMessage,
+    RuleDeleteAllMessage,
     RuleToggleMessage,
     RuleReorderMessage,
     RulePreviewMessage,
@@ -119,8 +141,10 @@ ClientMessage = Union[
 
 _CLIENT_MESSAGE_TYPES: dict[str, type[BaseModel]] = {
     "rule.create": RuleCreateMessage,
+    "rule.update": RuleUpdateMessage,
     "rule.list": RuleListRequest,
     "rule.delete": RuleDeleteMessage,
+    "rule.deleteAll": RuleDeleteAllMessage,
     "rule.toggle": RuleToggleMessage,
     "rule.reorder": RuleReorderMessage,
     "rule.preview": RulePreviewMessage,

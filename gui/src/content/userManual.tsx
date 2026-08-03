@@ -75,8 +75,9 @@ function En() {
       <h3>Managing your rules</h3>
       <ul>
         <li>Toggle the checkbox next to a rule's name to enable/disable it without deleting it.</li>
+        <li>Click <strong>Edit</strong> to open the same 3-step editor pre-filled with the rule's current settings — change anything and save to update it in place.</li>
         <li>Drag a rule card by its handle (⠿) to reorder the list — rules are scanned in list order.</li>
-        <li>Click <strong>Delete</strong> to remove a rule permanently (this can't be undone from the app).</li>
+        <li>Click <strong>Delete</strong> to remove a single rule immediately, or <strong>Delete All</strong> to clear every rule at once (this one asks for confirmation first, since it's harder to walk back). Neither can be undone from the app.</li>
       </ul>
 
       <h3>Safety features</h3>
@@ -174,8 +175,9 @@ function Zh() {
       <h3>管理你的規則</h3>
       <ul>
         <li>點擊規則名稱旁邊的核取方塊，可以在不刪除的情況下啟用/停用該規則。</li>
+        <li>點擊 <strong>編輯</strong> 會開啟跟新增規則一樣的三步驟編輯器，並預先帶入這條規則目前的設定 —— 改完存檔就會原地更新。</li>
         <li>拖曳規則卡片左側的把手（⠿）可以調整順序 —— 規則會依照清單順序依序掃描。</li>
-        <li>點擊 <strong>Delete</strong> 會永久刪除該規則（在應用程式裡無法復原）。</li>
+        <li>點擊 <strong>刪除</strong> 會立即永久刪除單一規則；點擊 <strong>刪除全部</strong> 會一次清空所有規則（這個會先跳出確認，因為影響範圍較大、比較難挽回）。兩者在應用程式裡都無法復原。</li>
       </ul>
 
       <h3>安全機制</h3>
