@@ -361,6 +361,13 @@ body {
   display: inline-block;
 }
 
+.rule-card__thumb--multiswatch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  overflow: hidden;
+}
+
 .rule-card__body {
   flex: 1;
   min-width: 0;
@@ -512,6 +519,49 @@ html.picker-mode #root {
   font-weight: 600;
   padding: 2px 6px;
   border-radius: 4px;
+}
+
+.picker-overlay--magnify {
+  cursor: crosshair;
+}
+
+.magnifier-hud {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  border-radius: 8px;
+  padding: 6px 10px;
+  pointer-events: none;
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.magnifier-hud__swatch {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  flex-shrink: 0;
+}
+
+.magnifier-picked {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.magnifier-picked__swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 /* --- rule editor modal --- */
@@ -748,6 +798,31 @@ html.picker-mode #root {
   border-radius: 4px;
   border: 1px solid var(--border);
   flex-shrink: 0;
+}
+
+.button-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.colour-pattern-swatches {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.colour-pattern-swatches__item {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  padding: 0;
+}
+
+.colour-pattern-swatches__item:hover {
+  border-color: var(--accent);
 }
 
 .test-match {

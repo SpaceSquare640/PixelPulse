@@ -28,6 +28,15 @@ function thumbnailFor(rule: RuleConfig) {
       />
     )
   }
+  if (rule.trigger.kind === 'colour_pattern' && rule.trigger.colours && rule.trigger.colours.length > 0) {
+    return (
+      <span className="rule-card__thumb rule-card__thumb--multiswatch">
+        {rule.trigger.colours.slice(0, 4).map((c, i) => (
+          <span key={i} style={{ background: `rgb(${c.rgb.join(',')})` }} />
+        ))}
+      </span>
+    )
+  }
   return <span className="rule-card__thumb rule-card__thumb--empty" />
 }
 

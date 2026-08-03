@@ -13,10 +13,17 @@ export interface PointPickResult {
   y: number
 }
 
+export interface ColourPickResult {
+  rgb: [number, number, number]
+  x: number
+  y: number
+}
+
 export interface PixelPulseBridge {
   pickRegion: () => Promise<RegionPickResult | null>
   pickPoint: () => Promise<PointPickResult | null>
-  reportPickerResult: (result: RegionPickResult | PointPickResult | null) => void
+  pickColours: () => Promise<ColourPickResult[] | null>
+  reportPickerResult: (result: RegionPickResult | PointPickResult | ColourPickResult[] | null) => void
   pickImageFile: () => Promise<string | null>
   pickImageFiles: () => Promise<string[] | null>
   getAppVersion: () => Promise<string>

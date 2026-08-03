@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLanguage } from '../i18n/LanguageContext'
+import { WS_URL } from '../serverConfig'
 
 interface Props {
   mode: 'region' | 'point'
@@ -10,6 +11,98 @@ interface Props {
 interface Point {
   x: number
   y: number
+}
+
+interface PickedColour {
+  rgb: [number, number, number]
+  x: number
+  y: number
+}
+
+function toHex([r, g, b]: [number, number, number]): string {
+  return '#' + [r, g, b].map((c) => c.toString(16).padStart(2, '0')).join('')
+}
+
+// The standalone/RuleEditor-integrated pixel magnifier ("像素圖" colour
+// picking tool): a full-desktop transparent overlay (like the point picker)
+// that continuously shows the RGB value under the cursor as you move, and
+// lets you click to add several colours to a list before finishing with
+// Enter -- rather than the single-point picker's one-click-and-done flow.
+//
+// 像素放大鏡工具（給「像素圖」挑色用）：跟點選工具一樣是蓋住整個桌面的透明
+// 疊層，但滑鼠移動時會持續顯示游標下的 RGB 值，並且可以多次點擊把好幾個
+// 顏色加進清單，最後按 Enter 才算完成 —— 不像單點選色一次點擊就結束。
+export function MagnifierOverlay({ originX, originY }: { originX: number; originY: number }) {
+  const { t } = useLanguage()
+  const [cursor, setCursor] = useState<Point>({ x: 0, y: 0 })
+  const [liveRgb, setLiveRgb] = useState<[number, number, number] | null>(null)
+  const [picked, setPicked] = useState<PickedColour[]>([])
+  const wsRef = useRef<WebSocket | null>(null)
+  const lastRequestAtRef = useRef(0)
+
+  useEffect(() => {
+    const ws = new WebSocket(WS_URL)
+    wsRef.current = ws
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data)
+      if (message.type === 'capture.pixel') {
+        setLiveRgb(message.targetRgb)
+      }
+    }
+    return () => ws.close()
+  }, [])
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        window.pixelpulse?.reportPickerResult(null)
+      } else if (e.key === 'Enter') {
+        window.pixelpulse?.reportPickerResult(picked)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [picked])
+
+  function handleMouseMove(e: React.MouseEvent) {
+    setCursor({ x: e.clientX, y: e.clientY })
+    const now = performance.now()
+    if (now - lastRequestAtRef.current < 60) return // throttle: ~16 requests/sec
+    lastRequestAtRef.current = now
+    const ws = wsRef.current
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'capture.pixel', x: originX + e.clientX, y: originY + e.clientY }))
+    }
+  }
+
+  function handleClick() {
+    if (!liveRgb) return
+    setPicked((prev) => [...prev, { rgb: liveRgb, x: originX + cursor.x, y: originY + cursor.y }])
+  }
+
+  return (
+    <div className="picker-overlay picker-overlay--magnify" onMouseMove={handleMouseMove} onClick={handleClick}>
+      <div className="picker-hint">{t('picker.magnifyHint', { count: picked.length })}</div>
+      {liveRgb && (
+        <div
+          className="magnifier-hud"
+          style={{ left: cursor.x + 16, top: cursor.y + 16 }}
+        >
+          <span className="magnifier-hud__swatch" style={{ background: `rgb(${liveRgb.join(',')})` }} />
+          <span className="magnifier-hud__label">
+            {toHex(liveRgb)} · rgb({liveRgb.join(', ')})
+          </span>
+        </div>
+      )}
+      {picked.length > 0 && (
+        <div className="magnifier-picked">
+          {picked.map((c, i) => (
+            <span key={i} className="magnifier-picked__swatch" style={{ background: `rgb(${c.rgb.join(',')})` }} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 // The window itself is transparent (see electron/main.js) and covers the

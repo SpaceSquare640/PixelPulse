@@ -29,10 +29,18 @@ const iconMaskStyle: CSSProperties = {
 export function SettingsPage({ onOpenHelp }: Props) {
   const { lang, setLang, t } = useLanguage()
   const [version, setVersion] = useState<string | null>(null)
+  const [lastPicked, setLastPicked] = useState<{ rgb: [number, number, number]; x: number; y: number }[] | null>(null)
+  const hasPickerBridge = typeof window !== 'undefined' && !!window.pixelpulse
 
   useEffect(() => {
     window.pixelpulse?.getAppVersion().then(setVersion)
   }, [])
+
+  async function handleOpenMagnifier() {
+    if (!window.pixelpulse) return
+    const result = await window.pixelpulse.pickColours()
+    setLastPicked(result)
+  }
 
   return (
     <div className="settings-page">
@@ -57,6 +65,26 @@ export function SettingsPage({ onOpenHelp }: Props) {
             English
           </button>
         </div>
+      </section>
+
+      <section className="panel">
+        <h2>{t('settings.toolsTitle')}</h2>
+        <p className="muted">{t('settings.toolsDescription')}</p>
+        <button type="button" className="button" disabled={!hasPickerBridge} onClick={handleOpenMagnifier}>
+          {t('settings.openMagnifier')}
+        </button>
+        {lastPicked && lastPicked.length > 0 && (
+          <div className="colour-pattern-swatches">
+            {lastPicked.map((c, i) => (
+              <span
+                key={i}
+                className="colour-pattern-swatches__item"
+                style={{ background: `rgb(${c.rgb.join(',')})` }}
+                title={`rgb(${c.rgb.join(', ')}) @ (${c.x}, ${c.y})`}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="panel">

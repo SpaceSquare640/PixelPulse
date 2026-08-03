@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLanguage } from '../i18n/LanguageContext'
-import type { ActionKind, MacroStep, RuleConfig, TriggerConfig } from '../protocol'
+import type { ActionKind, ColourPoint, MacroStep, RuleConfig, TriggerConfig } from '../protocol'
 import { HTTP_ORIGIN } from '../serverConfig'
 import { MacroStepEditor } from './MacroStepEditor'
 
@@ -16,6 +16,10 @@ interface CapturePixelResult {
 interface ImportImageResult {
   imagePath: string
   previewPngBase64: string
+}
+
+interface DetectColoursResult {
+  colours: ColourPoint[]
 }
 
 interface PreviewResult {
@@ -38,6 +42,7 @@ interface Props {
   captureCrop: (roi: [number, number, number, number], name: string) => Promise<CaptureCropResult>
   capturePixel: (x: number, y: number) => Promise<CapturePixelResult>
   importImage: (path: string, name: string) => Promise<ImportImageResult>
+  detectColours: (imagePath: string, maxColours?: number) => Promise<DetectColoursResult>
   previewTrigger: (trigger: TriggerConfig) => Promise<PreviewResult>
 }
 
@@ -57,6 +62,7 @@ export function RuleEditor({
   captureCrop,
   capturePixel,
   importImage,
+  detectColours,
   previewTrigger,
 }: Props) {
   const { t } = useLanguage()
@@ -98,6 +104,16 @@ export function RuleEditor({
     existingRule?.trigger.kind === 'pixel' ? (existingRule.trigger.targetRgb ?? null) : null,
   )
   const [tolerance, setTolerance] = useState(existingRule?.trigger.tolerance ?? 10)
+  const [colours, setColours] = useState<ColourPoint[] | null>(
+    existingRule?.trigger.kind === 'colour_pattern' ? (existingRule.trigger.colours ?? null) : null,
+  )
+  const [minMatches, setMinMatches] = useState(
+    existingRule?.trigger.kind === 'colour_pattern' ? (existingRule.trigger.minMatches ?? 2) : 2,
+  )
+  const [clusterRadius, setClusterRadius] = useState(
+    existingRule?.trigger.kind === 'colour_pattern' ? (existingRule.trigger.clusterRadius ?? 15) : 15,
+  )
+  const [detectingColours, setDetectingColours] = useState(false)
   const [picking, setPicking] = useState(false)
   const [captureError, setCaptureError] = useState<string | null>(null)
 
@@ -126,14 +142,30 @@ export function RuleEditor({
       const scanWholeScreen = imageSource === 'file' || wholeScreen
       return { kind: 'template', roi: scanWholeScreen ? null : roi, image, threshold }
     }
-    if (!roi || !pixelPoint || !targetRgb) return null
+    if (triggerKind === 'pixel') {
+      if (!roi || !pixelPoint || !targetRgb) return null
+      return {
+        kind: 'pixel',
+        roi,
+        pixelX: pixelPoint.x - roi[0],
+        pixelY: pixelPoint.y - roi[1],
+        targetRgb,
+        tolerance,
+      }
+    }
+    // colour_pattern ("像素圖"): always scans the whole screen -- the whole
+    // point of this trigger is tolerating a target that moves *and* rotates,
+    // so a fixed region would defeat its purpose.
+    // 像素圖：一律掃描整個螢幕——這個觸發條件的重點就是容忍目標會移動又旋轉，
+    // 固定範圍會違背它存在的意義。
+    if (!colours || colours.length === 0) return null
     return {
-      kind: 'pixel',
-      roi,
-      pixelX: pixelPoint.x - roi[0],
-      pixelY: pixelPoint.y - roi[1],
-      targetRgb,
+      kind: 'colour_pattern',
+      roi: null,
+      colours,
       tolerance,
+      minMatches: Math.min(minMatches, colours.length),
+      clusterRadius,
     }
   }
 
@@ -198,6 +230,43 @@ export function RuleEditor({
     }
   }
 
+  async function handlePickColours() {
+    if (!window.pixelpulse) return
+    setPicking(true)
+    setCaptureError(null)
+    try {
+      const picked = await window.pixelpulse.pickColours()
+      if (!picked || picked.length === 0) return
+      const cx = picked.reduce((sum, c) => sum + c.x, 0) / picked.length
+      const cy = picked.reduce((sum, c) => sum + c.y, 0) / picked.length
+      setColours(picked.map((c) => ({ rgb: c.rgb, offsetX: Math.round(c.x - cx), offsetY: Math.round(c.y - cy) })))
+      setPreviewResult(null)
+    } catch (err) {
+      setCaptureError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setPicking(false)
+    }
+  }
+
+  async function handleAutoDetectColours() {
+    if (!window.pixelpulse) return
+    setDetectingColours(true)
+    setCaptureError(null)
+    try {
+      const region = await window.pixelpulse.pickRegion()
+      if (!region) return
+      const roiTuple: [number, number, number, number] = [region.left, region.top, region.width, region.height]
+      const captured = await captureCrop(roiTuple, name || 'colour-source')
+      const result = await detectColours(captured.imagePath, 5)
+      setColours(result.colours)
+      setPreviewResult(null)
+    } catch (err) {
+      setCaptureError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setDetectingColours(false)
+    }
+  }
+
   async function handleTestMatch() {
     const trigger = buildTrigger()
     if (!trigger) return
@@ -238,7 +307,12 @@ export function RuleEditor({
     }
   }
 
-  const step1Complete = triggerKind === 'template' ? !!image : !!(roi && pixelPoint && targetRgb)
+  const step1Complete =
+    triggerKind === 'template'
+      ? !!image
+      : triggerKind === 'pixel'
+        ? !!(roi && pixelPoint && targetRgb)
+        : !!colours && colours.length > 0
   const trimmedName = name.trim()
   const nameIsValid =
     trimmedName.length > 0 && (trimmedName === existingRule?.name || !existingNames.includes(trimmedName))
@@ -288,6 +362,15 @@ export function RuleEditor({
                     onClick={() => setTriggerKind('pixel')}
                   >
                     {t('ruleEditor.triggerPixel')}
+                  </button>
+                  <button
+                    type="button"
+                    className={
+                      triggerKind === 'colour_pattern' ? 'segmented__option segmented__option--active' : 'segmented__option'
+                    }
+                    onClick={() => setTriggerKind('colour_pattern')}
+                  >
+                    {t('ruleEditor.triggerColourPattern')}
                   </button>
                 </div>
               </label>
@@ -361,7 +444,7 @@ export function RuleEditor({
                     />
                   </label>
                 </>
-              ) : (
+              ) : triggerKind === 'pixel' ? (
                 <>
                   <button type="button" className="button" disabled={!hasPickerBridge || picking} onClick={handlePickPoint}>
                     {picking ? t('ruleEditor.picking') : t('ruleEditor.pickPoint')}
@@ -383,6 +466,81 @@ export function RuleEditor({
                       step={1}
                       value={tolerance}
                       onChange={(e) => setTolerance(Number(e.target.value))}
+                    />
+                  </label>
+                </>
+              ) : (
+                <>
+                  <p className="muted">{t('ruleEditor.colourPatternNote')}</p>
+                  <div className="button-row">
+                    <button
+                      type="button"
+                      className="button"
+                      disabled={!hasPickerBridge || detectingColours}
+                      onClick={handleAutoDetectColours}
+                    >
+                      {detectingColours ? t('ruleEditor.picking') : t('ruleEditor.autoDetectColours')}
+                    </button>
+                    <button
+                      type="button"
+                      className="button button--ghost"
+                      disabled={!hasPickerBridge || picking}
+                      onClick={handlePickColours}
+                    >
+                      {picking ? t('ruleEditor.picking') : t('ruleEditor.pickColoursWithMagnifier')}
+                    </button>
+                  </div>
+
+                  {colours && colours.length > 0 && (
+                    <div className="colour-pattern-swatches">
+                      {colours.map((c, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          className="colour-pattern-swatches__item"
+                          style={{ background: `rgb(${c.rgb.join(',')})` }}
+                          title={t('ruleEditor.removeColour')}
+                          onClick={() => setColours(colours.filter((_, idx) => idx !== i))}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {colours && colours.length > 0 && (
+                    <label className="field">
+                      <span>{t('ruleEditor.minMatches', { value: minMatches, total: colours.length })}</span>
+                      <input
+                        type="range"
+                        min={1}
+                        max={colours.length}
+                        step={1}
+                        value={Math.min(minMatches, colours.length)}
+                        onChange={(e) => setMinMatches(Number(e.target.value))}
+                      />
+                    </label>
+                  )}
+
+                  <label className="field">
+                    <span>{t('ruleEditor.colourTolerance', { value: tolerance })}</span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={40}
+                      step={1}
+                      value={tolerance}
+                      onChange={(e) => setTolerance(Number(e.target.value))}
+                    />
+                  </label>
+
+                  <label className="field">
+                    <span>{t('ruleEditor.clusterRadius', { value: clusterRadius })}</span>
+                    <input
+                      type="range"
+                      min={5}
+                      max={60}
+                      step={1}
+                      value={clusterRadius}
+                      onChange={(e) => setClusterRadius(Number(e.target.value))}
                     />
                   </label>
                 </>

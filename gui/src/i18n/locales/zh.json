@@ -21,6 +21,9 @@
   "settings": {
     "languageTitle": "語言",
     "languageDescription": "選擇整個應用程式要顯示的語言。",
+    "toolsTitle": "工具",
+    "toolsDescription": "獨立的像素放大鏡——把滑鼠移到螢幕任何地方即可看到該處的 RGB 值，點擊可以記錄下這個顏色。規則編輯器的「像素圖」挑色步驟裡也能開啟同一個工具。",
+    "openMagnifier": "開啟像素放大鏡",
     "aboutTitle": "關於",
     "version": "版本 {version}",
     "versionUnknown": "版本未知"
@@ -48,7 +51,8 @@
   },
   "triggerKind": {
     "template": "圖片",
-    "pixel": "像素"
+    "pixel": "像素",
+    "colour_pattern": "像素圖"
   },
   "actionKind": {
     "click": "點擊",
@@ -68,6 +72,13 @@
     "triggerTypeLabel": "觸發條件類型",
     "triggerTemplate": "圖片（樣板匹配）",
     "triggerPixel": "像素顏色",
+    "triggerColourPattern": "像素圖",
+    "colourPatternNote": "記錄目標身上幾個關鍵顏色，偵測時只要這些顏色在畫面上某處群聚在一起就算命中，不管目標旋轉到哪個角度。一律掃描整個螢幕。",
+    "autoDetectColours": "自動偵測顏色",
+    "pickColoursWithMagnifier": "使用放大鏡挑選顏色",
+    "removeColour": "移除這個顏色",
+    "minMatches": "至少要命中幾個顏色：{value} / {total}",
+    "clusterRadius": "群聚搜尋半徑：{value}px",
     "selectRegion": "在螢幕上框選區域",
     "picking": "選取中…",
     "pickPoint": "在螢幕上點選一個點",
@@ -136,7 +147,8 @@
   },
   "picker": {
     "clickToPickColour": "點擊一個點以擷取其顏色 — 按 Esc 取消",
-    "dragToSelectRegion": "拖曳以框選一個區域 — 按 Esc 取消"
+    "dragToSelectRegion": "拖曳以框選一個區域 — 按 Esc 取消",
+    "magnifyHint": "點擊新增顏色（已選 {count} 個）— 按 Enter 完成，按 Esc 取消"
   },
   "socket": {
     "notConnected": "尚未連線到 PixelPulse 伺服器。",

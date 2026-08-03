@@ -12,6 +12,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("pixelpulse", {
   pickRegion: () => ipcRenderer.invoke("picker:start-region"),
   pickPoint: () => ipcRenderer.invoke("picker:start-point"),
+  pickColours: () => ipcRenderer.invoke("picker:start-magnify"),
   reportPickerResult: (result) => ipcRenderer.send("picker:result", result),
   pickImageFile: () => ipcRenderer.invoke("dialog:pick-image-file"),
   pickImageFiles: () => ipcRenderer.invoke("dialog:pick-image-files"),

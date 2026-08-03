@@ -30,6 +30,7 @@ function App() {
     captureCrop,
     capturePixel,
     importImage,
+    detectColours,
     previewTrigger,
   } = useEngineSocket()
 
@@ -142,6 +143,7 @@ function App() {
             captureCrop={captureCrop}
             capturePixel={capturePixel}
             importImage={importImage}
+            detectColours={detectColours}
             previewTrigger={previewTrigger}
           />
         )}

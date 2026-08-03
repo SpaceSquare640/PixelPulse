@@ -21,6 +21,9 @@
   "settings": {
     "languageTitle": "Language",
     "languageDescription": "Choose the language for the whole app.",
+    "toolsTitle": "Tools",
+    "toolsDescription": "Standalone pixel magnifier — hover anywhere on screen to see its RGB value, click to note colours down. Also available from the rule editor's Pixel Map colour-picking step.",
+    "openMagnifier": "Open Pixel Magnifier",
     "aboutTitle": "About",
     "version": "Version {version}",
     "versionUnknown": "Version unknown"
@@ -48,7 +51,8 @@
   },
   "triggerKind": {
     "template": "template",
-    "pixel": "pixel"
+    "pixel": "pixel",
+    "colour_pattern": "pixel map"
   },
   "actionKind": {
     "click": "click",
@@ -68,6 +72,13 @@
     "triggerTypeLabel": "Trigger type",
     "triggerTemplate": "Image (template)",
     "triggerPixel": "Pixel colour",
+    "triggerColourPattern": "Pixel Map",
+    "colourPatternNote": "Records a handful of key colours from the target and matches wherever several of them cluster together on screen, regardless of the target's rotation. Always scans the whole screen.",
+    "autoDetectColours": "Auto-Detect Colours",
+    "pickColoursWithMagnifier": "Pick Colours with Magnifier",
+    "removeColour": "Remove this colour",
+    "minMatches": "Minimum colours to match: {value} of {total}",
+    "clusterRadius": "Cluster search radius: {value}px",
     "selectRegion": "Select Region on Screen",
     "picking": "Picking…",
     "pickPoint": "Pick a Point on Screen",
@@ -136,7 +147,8 @@
   },
   "picker": {
     "clickToPickColour": "Click a point to pick its colour — Esc to cancel",
-    "dragToSelectRegion": "Drag to select a region — Esc to cancel"
+    "dragToSelectRegion": "Drag to select a region — Esc to cancel",
+    "magnifyHint": "Click to add a colour ({count} picked) — Enter to finish, Esc to cancel"
   },
   "socket": {
     "notConnected": "Not connected to the PixelPulse server.",

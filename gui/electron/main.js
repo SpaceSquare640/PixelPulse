@@ -215,6 +215,14 @@ function startPicker(mode) {
 
 ipcMain.handle("picker:start-region", () => startPicker("region"));
 ipcMain.handle("picker:start-point", () => startPicker("point"));
+// The pixel magnifier ("像素圖" colour picking tool) -- same full-desktop
+// transparent overlay mechanism as region/point, but its renderer supports
+// picking several colours before finishing. Also reachable standalone (see
+// SettingsPage.tsx), not just from the rule editor.
+// 像素放大鏡（「像素圖」挑色工具）—— 跟框選/點選一樣是蓋住整個桌面的透明疊層
+// 機制，但它的畫面支援挑選好幾個顏色才結束。也可以獨立開啟使用（見
+// SettingsPage.tsx），不是只有規則編輯器裡才用得到。
+ipcMain.handle("picker:start-magnify", () => startPicker("magnify"));
 
 // The picker renderer reports its result (or null on Escape/cancel) here;
 // whichever invoke() call is currently pending gets resolved with it.
