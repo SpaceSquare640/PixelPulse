@@ -21,6 +21,7 @@ using the CLI without the GUI.
 ## Contents
 
 - [Using the app](#using-the-app)
+- [Pixel Map trigger](#pixel-map-trigger-for-targets-that-move-and-rotate)
 - [Macros](#macros-multi-step-actions)
 - [Updates](#updates)
 - [Running from source](#running-from-source)
@@ -40,13 +41,14 @@ version, Help).
 
 Click **New Rule** to open the 3-step editor:
 
-1. **Trigger** — "Image (template)" or "Pixel colour". For an image
-   trigger, choose the source: *Select Region on Screen* (drag a box; the
-   desktop dims except the area you're selecting) or *Browse for Image
-   File* (pick an existing image from disk). A screen-cropped region can
-   optionally check **Scan the whole screen** to match the target anywhere
-   rather than just where it was captured; an uploaded file always scans
-   the whole screen. Use **Test Match** to confirm detection before saving.
+1. **Trigger** — "Image (template)", "Pixel colour", or **Pixel Map** for a
+   target that moves *and* rotates (see below). For an image trigger,
+   choose the source: *Select Region on Screen* (drag a box; the desktop
+   dims except the area you're selecting) or *Browse for Image File* (pick
+   an existing image from disk). A screen-cropped region can optionally
+   check **Scan the whole screen** to match the target anywhere rather than
+   just where it was captured; an uploaded file always scans the whole
+   screen. Use **Test Match** to confirm detection before saving.
 2. **Action** — click, double-click, key press, typed text, or **Macro
    (multi-step)**.
 3. **Safety** — name, an optional trigger limit, dry-run, and either a
@@ -80,6 +82,34 @@ The **Help** button on the Settings page opens the in-app manual, user
 notice, terms of service, disclaimer, and privacy policy, each available in
 English and 繁體中文 via the language switcher (also on the Settings page).
 Source: `gui/src/content/`.
+
+## Pixel Map trigger (for targets that move and rotate)
+
+Image matching only tolerates translation, not rotation — a target that
+spins or turns stops matching the instant it no longer looks like the
+original capture. Pixel colour matching only checks one fixed screen point,
+so it can't follow a moving target either. **Pixel Map** covers targets
+that do both: it records a handful of key colours from the target and
+matches wherever several of them cluster together on screen, regardless of
+the target's current rotation (relative angle between the colour points is
+never checked — only "are these colours near each other").
+
+- **Auto-Detect Colours** — select a region on screen and the app
+  automatically picks out its most prominent colours (k-means colour
+  quantization).
+- **Pick Colours with Magnifier** — opens the pixel magnifier (below) to
+  choose colours by hand instead.
+- **Minimum colours to match** / **Cluster search radius** — tune how many
+  key colours need to cluster together, and how close counts as
+  "clustered", to trade off sensitivity against false positives. Always
+  scans the whole screen.
+
+### Pixel magnifier
+
+A standalone screen-colour inspector: open it from **Settings → Tools →
+Open Pixel Magnifier**, or from the Pixel Map trigger's colour-picking
+step. Hover anywhere on screen to see that point's live RGB value, click to
+add it to a list, then press **Enter** to finish (**Esc** to cancel).
 
 ## Macros (multi-step actions)
 
@@ -201,7 +231,7 @@ of small rules there's nothing to parallelize.
 ## Tests
 
 ```bash
-pytest                     # Python: core engine + server (60 tests)
+pytest                     # Python: core engine + server (78 tests)
 cd gui && npm run build    # TypeScript: type-checks the renderer
 python -m benchmarks.bench_matching   # perf: where the time actually goes
 python -m benchmarks.bench_parallel   # perf: sequential vs thread-pool
@@ -213,7 +243,8 @@ python -m benchmarks.bench_engine     # perf: same, through the real RuleEngine 
 ```
 core/
 ├─ capture/       # screen grabbing (mss)
-├─ vision/        # template matching + pixel colour matching (OpenCV/NumPy)
+├─ vision/        # template matching, pixel colour matching, colour-cluster
+│                  # matching, and auto colour detection (OpenCV/NumPy)
 ├─ automation/     # mouse/keyboard backend + emergency-stop hotkey
 ├─ rules/
 │  ├─ models.py    # rule/trigger/action/macro-step schema
@@ -239,9 +270,11 @@ gui/
    │  ├─ RuleEditor.tsx      # 3-step rule wizard (create + edit)
    │  ├─ MacroStepEditor.tsx  # step list editor for the "macro" action
    │  ├─ PickerOverlay.tsx   # renders inside the transparent picker window
+   │  │                      # (region/point/multi-colour magnifier modes)
    │  ├─ RuleList.tsx        # card list, thumbnails, drag-to-reorder, batch upload
    │  ├─ Sidebar.tsx         # left nav: Rules / Activity / Settings
-   │  ├─ SettingsPage.tsx    # language switcher, app version, Help trigger
+   │  ├─ SettingsPage.tsx    # language switcher, app version, Help trigger,
+   │  │                      # standalone pixel magnifier entry point
    │  ├─ HelpModal.tsx       # in-app manual/notice/terms/disclaimer/privacy (tabs, follows global language)
    │  ├─ EngineControls.tsx / LogPanel.tsx / StatusBar.tsx
    ├─ content/               # userManual.tsx / userNotice.tsx / termsOfService.tsx /

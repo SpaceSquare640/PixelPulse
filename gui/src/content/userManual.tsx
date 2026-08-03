@@ -29,8 +29,9 @@ function En() {
       <p>Click <strong>New Rule</strong> to open the 3-step editor:</p>
       <ol>
         <li>
-          <strong>Trigger</strong> — choose <em>Image (template)</em> to match a picture, or <em>Pixel colour</em> to
-          match a single point's colour. For an image trigger, pick where the image comes from: <em>Select Region on
+          <strong>Trigger</strong> — choose <em>Image (template)</em> to match a picture, <em>Pixel colour</em> to
+          match a single point's colour, or <em>Pixel Map</em> for a target that moves and rotates (see below). For
+          an image trigger, pick where the image comes from: <em>Select Region on
           Screen</em> (the whole desktop dims except the area you're selecting — drag a box and release, it's
           captured immediately) or <em>Browse for Image File</em> (choose an existing image from disk). A
           screen-cropped region can optionally check <strong>Scan the whole screen</strong> to match the target
@@ -70,6 +71,46 @@ function En() {
         Each step can have a delay before it runs, and steps that locate a target on screen have a timeout and retry
         count. If the target still isn't found, the macro stops by default (you'll see this reported in the Activity
         panel) rather than continuing blindly.
+      </p>
+
+      <h3>Pixel Map trigger (for targets that move and rotate)</h3>
+      <p>
+        Image matching only tolerates a target moving, not rotating — a target that spins or turns will stop matching
+        the instant it no longer looks like the original capture. Pixel colour matching only checks a single fixed
+        screen point, so it can't follow a moving target either. <strong>Pixel Map</strong> is built for targets that
+        do both: it records a handful of key colours from the target and matches wherever several of them cluster
+        together on screen, regardless of the target's current rotation.
+      </p>
+      <ul>
+        <li>
+          <strong>Auto-Detect Colours</strong> — select a region on screen and the app automatically picks out its
+          most prominent colours.
+        </li>
+        <li>
+          <strong>Pick Colours with Magnifier</strong> — opens the pixel magnifier tool (see below) so you can choose
+          colours by hand.
+        </li>
+        <li>
+          <strong>Minimum colours to match</strong> — how many of the key colours need to be found clustered together
+          to count as a hit; lower this if the target is sometimes partially obscured.
+        </li>
+        <li>
+          <strong>Cluster search radius</strong> — how close together the colours need to appear.
+        </li>
+      </ul>
+      <p>
+        Because it doesn't check the colours' relative layout, only that they're near each other, a Pixel Map trigger
+        can have more false positives than an image trigger if the same colours happen to cluster elsewhere on
+        screen — tune the tolerance, colour count, and minimum-matches if that happens. It always scans the whole
+        screen.
+      </p>
+
+      <h3>Pixel magnifier</h3>
+      <p>
+        A standalone tool for inspecting screen colours: open it from <strong>Settings → Tools → Open Pixel
+        Magnifier</strong>, or from the Pixel Map trigger's colour-picking step. Move your mouse anywhere on screen to
+        see that point's RGB value live, click to add it to your list, then press <strong>Enter</strong> to finish (or
+        <strong> Esc</strong> to cancel).
       </p>
 
       <h3>Managing your rules</h3>
@@ -149,8 +190,8 @@ function Zh() {
       <p>點擊 <strong>New Rule</strong> 開啟三步驟編輯器：</p>
       <ol>
         <li>
-          <strong>Trigger（觸發條件）</strong> —— 選「Image (template)」比對圖片，或選「Pixel colour」比對單一座標的
-          顏色。選圖片觸發時，先選圖片的來源：<em>Select Region on Screen</em>（整個桌面會變暗，只留下你正在選取的
+          <strong>Trigger（觸發條件）</strong> —— 選「Image (template)」比對圖片、選「Pixel colour」比對單一座標的
+          顏色，或選「Pixel Map（像素圖）」給會移動又旋轉的目標用（見下方說明）。選圖片觸發時，先選圖片的來源：<em>Select Region on Screen</em>（整個桌面會變暗，只留下你正在選取的
           範圍；拖曳框選一塊區域後放開，會立即擷取）或 <em>Browse for Image File</em>（從硬碟選一張既有的圖片）。
           框選出來的區域可以另外勾選 <strong>Scan the whole screen</strong>，讓目標在螢幕任何地方出現都算命中，
           而不限於當初框選的那塊區域；上傳的圖片檔案則一律掃描整個螢幕（因為沒有對應的框選區域可以退回去用）。用
@@ -184,6 +225,41 @@ function Zh() {
       <p>
         每個步驟都可以設定執行前的延遲；需要在畫面上找目標的步驟另外有逾時時間與重試次數。如果重試完還是找不到，
         巨集預設會直接中止（你會在活動紀錄裡看到這個結果），而不是盲目繼續執行下去。
+      </p>
+
+      <h3>像素圖（Pixel Map）觸發條件——給會移動又旋轉的目標用</h3>
+      <p>
+        圖片比對只耐得住目標移動位置，耐不住旋轉——目標一轉角度，跟截圖不像了就比對失敗。像素顏色比對只檢查
+        螢幕上單一固定座標，同樣沒辦法跟著移動的目標跑。<strong>像素圖</strong> 就是為了「又會移動、又會旋轉」的
+        目標而設計：記錄目標身上幾個關鍵顏色，偵測時只要這些顏色在畫面上某處群聚在一起就算命中，不管目標現在轉到
+        哪個角度。
+      </p>
+      <ul>
+        <li>
+          <strong>自動偵測顏色</strong> —— 在螢幕上框選一個區域，應用程式會自動抓出裡面最主要的幾個顏色。
+        </li>
+        <li>
+          <strong>使用放大鏡挑選顏色</strong> —— 開啟像素放大鏡工具（見下方說明），自己手動挑顏色。
+        </li>
+        <li>
+          <strong>至少要命中幾個顏色</strong> —— 需要有幾個關鍵顏色群聚在一起才算命中；如果目標常常被部分遮擋，
+          可以調低這個數字。
+        </li>
+        <li>
+          <strong>群聚搜尋半徑</strong> —— 這些顏色要多靠近才算「群聚在一起」。
+        </li>
+      </ul>
+      <p>
+        因為不檢查顏色之間的相對排列，只看它們是否彼此靠近，像素圖規則的誤判機率可能會比圖片比對高一些——如果畫面
+        上剛好有別的地方也有相同顏色群聚，就可能誤判。遇到這種情況可以調整容許誤差、顏色數量、或最低命中數。
+        像素圖一律掃描整個螢幕。
+      </p>
+
+      <h3>像素放大鏡</h3>
+      <p>
+        一個獨立的螢幕顏色檢視工具：可以從 <strong>設定 → 工具 → 開啟像素放大鏡</strong> 開啟，或是在「像素圖」
+        觸發條件的挑色步驟裡開啟。把滑鼠移到螢幕任何地方，就能即時看到該處的 RGB 值，點擊即可把它加進清單，最後
+        按 <strong>Enter</strong> 完成（按 <strong>Esc</strong> 取消）。
       </p>
 
       <h3>管理你的規則</h3>
