@@ -173,6 +173,27 @@ def test_preview_trigger_pixel_no_match(service):
     assert match is None
 
 
+def test_detect_colours_returns_key_colours(service, tmp_path):
+    src = tmp_path / "target.png"
+    image = np.zeros((20, 20, 3), dtype=np.uint8)
+    image[:10] = (0, 0, 255)  # BGR red on top half
+    image[10:] = (0, 255, 0)  # BGR green on bottom half
+    cv2.imwrite(str(src), image)
+
+    colours = service.detect_colours(str(src), max_colours=5)
+
+    assert len(colours) == 2
+    assert {c.rgb for c in colours} == {(255, 0, 0), (0, 255, 0)}
+    # Red half is the top of the image -> negative y offset from center.
+    red = next(c for c in colours if c.rgb == (255, 0, 0))
+    assert red.offset_y < 0
+
+
+def test_detect_colours_missing_file_raises(service, tmp_path):
+    with pytest.raises(FileNotFoundError):
+        service.detect_colours(str(tmp_path / "nope.png"))
+
+
 def test_preview_trigger_colour_pattern_match(service):
     r, g, b = service.capture_pixel(0, 0)
     trigger = TriggerConfig(

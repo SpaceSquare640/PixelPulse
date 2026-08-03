@@ -11,7 +11,7 @@ from typing import Literal, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from core.rules.models import RuleConfig, TriggerConfig
+from core.rules.models import ColourPoint, RuleConfig, TriggerConfig
 
 # --- Client -> server -------------------------------------------------------
 
@@ -122,6 +122,21 @@ class CaptureImportMessage(BaseModel):
     name: str
 
 
+class CaptureDetectColoursMessage(BaseModel):
+    """Auto-detect a handful of key colours from an already-saved template
+    image, for the "像素圖" (colour_pattern) trigger's colour-picking step.
+
+    從已儲存的樣板圖片自動偵測幾個關鍵顏色 —— 供「像素圖」（colour_pattern）
+    觸發條件的挑色步驟使用。
+    """
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    type: Literal["capture.detectColours"] = "capture.detectColours"
+    image_path: str = Field(alias="imagePath")
+    max_colours: int = Field(default=5, alias="maxColours")
+
+
 ClientMessage = Union[
     RuleCreateMessage,
     RuleUpdateMessage,
@@ -134,6 +149,7 @@ ClientMessage = Union[
     CaptureCropMessage,
     CapturePixelMessage,
     CaptureImportMessage,
+    CaptureDetectColoursMessage,
     EngineStartMessage,
     EngineStopMessage,
     EngineStatusRequest,
@@ -151,6 +167,7 @@ _CLIENT_MESSAGE_TYPES: dict[str, type[BaseModel]] = {
     "capture.crop": CaptureCropMessage,
     "capture.pixel": CapturePixelMessage,
     "capture.import": CaptureImportMessage,
+    "capture.detectColours": CaptureDetectColoursMessage,
     "engine.start": EngineStartMessage,
     "engine.stop": EngineStopMessage,
     "engine.status": EngineStatusRequest,
@@ -224,6 +241,13 @@ class CaptureImportResponse(BaseModel):
     type: Literal["capture.import"] = "capture.import"
     image_path: str = Field(alias="imagePath")
     preview_png_base64: str = Field(alias="previewPngBase64")
+
+
+class CaptureDetectColoursResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    type: Literal["capture.detectColours"] = "capture.detectColours"
+    colours: list[ColourPoint]
 
 
 class ErrorMessage(BaseModel):

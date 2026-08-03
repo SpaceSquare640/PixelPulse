@@ -63,7 +63,9 @@ export function RuleEditor({
   const [step, setStep] = useState(0)
 
   const [name, setName] = useState(existingRule?.name ?? '')
-  const [triggerKind, setTriggerKind] = useState<'template' | 'pixel'>(existingRule?.trigger.kind ?? 'template')
+  const [triggerKind, setTriggerKind] = useState<'template' | 'pixel' | 'colour_pattern'>(
+    existingRule?.trigger.kind ?? 'template',
+  )
   const [imageSource, setImageSource] = useState<'crop' | 'file'>('crop')
   const [roi, setRoi] = useState<[number, number, number, number] | null>(existingRule?.trigger.roi ?? null)
   // Defaults to true: a template match should find its target wherever it

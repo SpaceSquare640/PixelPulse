@@ -203,6 +203,40 @@ def test_capture_import_missing_file_returns_error(client, tmp_path):
         assert error["type"] == "error"
 
 
+def test_capture_detect_colours_returns_key_colours(client, tmp_path):
+    import cv2
+    import numpy as np
+
+    src = tmp_path / "target.png"
+    image = np.zeros((20, 20, 3), dtype=np.uint8)
+    image[:10] = (0, 0, 255)  # BGR red on top half
+    image[10:] = (0, 255, 0)  # BGR green on bottom half
+    cv2.imwrite(str(src), image)
+
+    with client.websocket_connect("/ws") as ws:
+        ws.receive_json()
+        ws.receive_json()
+
+        ws.send_json({"type": "capture.detectColours", "imagePath": str(src), "maxColours": 5})
+        response = ws.receive_json()
+
+        assert response["type"] == "capture.detectColours"
+        assert len(response["colours"]) == 2
+        rgbs = {tuple(c["rgb"]) for c in response["colours"]}
+        assert rgbs == {(255, 0, 0), (0, 255, 0)}
+
+
+def test_capture_detect_colours_missing_file_returns_error(client, tmp_path):
+    with client.websocket_connect("/ws") as ws:
+        ws.receive_json()
+        ws.receive_json()
+
+        ws.send_json({"type": "capture.detectColours", "imagePath": str(tmp_path / "nope.png")})
+        error = ws.receive_json()
+
+        assert error["type"] == "error"
+
+
 def test_rule_preview_reports_match(client):
     with client.websocket_connect("/ws") as ws:
         ws.receive_json()

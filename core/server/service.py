@@ -36,7 +36,8 @@ from core.capture.screen import Region, ScreenCapture
 from core.rules.engine import RuleEngine
 from core.rules.events import EngineEvent
 from core.rules.loader import load_rules, save_rules
-from core.rules.models import RuleConfig, TriggerConfig
+from core.rules.models import ColourPoint, RuleConfig, TriggerConfig
+from core.vision.colour_detect import detect_key_colours
 from core.vision.colour_pattern import find_colour_cluster
 from core.vision.match_result import Match
 from core.vision.pixel_match import match_pixel, read_pixel_rgb
@@ -221,6 +222,26 @@ class EngineService:
         ok, buf = cv2.imencode(".png", frame)
         preview_b64 = base64.b64encode(buf.tobytes()).decode("ascii") if ok else ""
         return dest.as_posix(), preview_b64
+
+    def detect_colours(self, image_path: str, max_colours: int = 5) -> list[ColourPoint]:
+        """Auto-detect key colours from a saved template image, for the
+        "像素圖" (colour_pattern) trigger's setup flow.
+
+        從已儲存的樣板圖片自動偵測關鍵顏色，供「像素圖」（colour_pattern）
+        觸發條件的設定流程使用。
+        """
+        src = Path(image_path)
+        if not src.is_file():
+            raise FileNotFoundError(f"No such file: {image_path}")
+
+        image = cv2.imread(str(src), cv2.IMREAD_COLOR)
+        if image is None:
+            raise ValueError(f"Could not read image file: {image_path}")
+
+        return [
+            ColourPoint(rgb=rgb, offset_x=offset_x, offset_y=offset_y)
+            for rgb, offset_x, offset_y in detect_key_colours(image, max_colours=max_colours)
+        ]
 
     def preview_trigger(self, trigger: TriggerConfig) -> Match | None:
         """Run a single detection pass for a trigger that isn't saved as a rule yet.

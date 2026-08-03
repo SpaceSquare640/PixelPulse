@@ -5,9 +5,19 @@
 // 與 Python 核心共用的 WebSocket 訊息協定，對應 core/server/protocol.py。
 // 目前沒有自動產生程式碼，兩邊需要手動保持同步。
 
-export type TriggerKind = 'template' | 'pixel'
+export type TriggerKind = 'template' | 'pixel' | 'colour_pattern'
 export type ActionKind = 'click' | 'double_click' | 'key' | 'type' | 'macro'
 export type MacroStepKind = 'click' | 'double_click' | 'key' | 'type' | 'wait_for'
+
+// One key colour in a "像素圖" (Pixel Map / colour_pattern) trigger's colour
+// set. offsetX/offsetY only describe the rough size of the original capture
+// (sizes the default cluster search radius) -- never compared to each other
+// at detection time, since the point is to tolerate the target rotating.
+export interface ColourPoint {
+  rgb: [number, number, number]
+  offsetX?: number
+  offsetY?: number
+}
 
 export interface TriggerConfig {
   kind: TriggerKind
@@ -19,6 +29,10 @@ export interface TriggerConfig {
   pixelY?: number | null
   targetRgb?: [number, number, number] | null
   tolerance?: number
+  // colour_pattern ("像素圖") trigger
+  colours?: ColourPoint[] | null
+  minMatches?: number
+  clusterRadius?: number
 }
 
 // Mirrors core/rules/models.py's MacroStep (Phase 4).
@@ -98,6 +112,7 @@ export type ClientMessage =
   | { type: 'capture.crop'; roi: [number, number, number, number]; name: string }
   | { type: 'capture.pixel'; x: number; y: number }
   | { type: 'capture.import'; path: string; name: string }
+  | { type: 'capture.detectColours'; imagePath: string; maxColours?: number }
   | { type: 'engine.start' }
   | { type: 'engine.stop' }
   | { type: 'engine.status' }
@@ -112,4 +127,5 @@ export type ServerMessage =
   | { type: 'capture.crop'; imagePath: string; previewPngBase64: string; roi: [number, number, number, number] }
   | { type: 'capture.pixel'; x: number; y: number; targetRgb: [number, number, number] }
   | { type: 'capture.import'; imagePath: string; previewPngBase64: string }
+  | { type: 'capture.detectColours'; colours: ColourPoint[] }
   | { type: 'error'; message: string }

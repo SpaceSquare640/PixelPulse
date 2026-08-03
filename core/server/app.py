@@ -25,6 +25,8 @@ from core.rules.events import EngineEvent
 from core.server.protocol import (
     CaptureCropMessage,
     CaptureCropResponse,
+    CaptureDetectColoursMessage,
+    CaptureDetectColoursResponse,
     CaptureImportMessage,
     CaptureImportResponse,
     CapturePixelMessage,
@@ -204,6 +206,9 @@ def create_app(
                 await websocket.send_json(
                     CaptureImportResponse(imagePath=image_path, previewPngBase64=preview_b64).model_dump(by_alias=True)
                 )
+            elif isinstance(message, CaptureDetectColoursMessage):
+                colours = await asyncio.to_thread(service.detect_colours, message.image_path, message.max_colours)
+                await websocket.send_json(CaptureDetectColoursResponse(colours=colours).model_dump(by_alias=True))
             elif isinstance(message, EngineStartMessage):
                 service.start()
                 await manager.broadcast(_status_response().model_dump(by_alias=True))
