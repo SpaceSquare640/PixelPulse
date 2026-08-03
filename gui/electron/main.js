@@ -18,6 +18,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { checkForUpdates } from "./updater.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PRELOAD_PATH = path.join(__dirname, "preload.cjs");
@@ -251,6 +252,11 @@ app.whenReady().then(() => {
   startBundledServer();
   createWindow();
   createTray();
+  // Fire-and-forget: never blocks window creation, and only prompts the
+  // user (never installs anything) without their explicit confirmation.
+  // 不等待、不阻塞視窗建立；沒有經過使用者明確確認之前，這裡只會跳提示，
+  // 不會真的安裝任何東西。
+  checkForUpdates().catch((err) => console.error("Update check crashed:", err));
 });
 
 app.on("before-quit", () => {

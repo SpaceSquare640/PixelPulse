@@ -96,6 +96,15 @@ python -m core.run rules.json
 使用者須知、使用條款、免責聲明、隱私權政策，透過設定頁的語言切換（同一頁）都能看
 繁體中文或英文版本。原始內容在 `gui/src/content/`。
 
+### 更新機制
+
+安裝好的 App 每次啟動都會檢查一次 GitHub Releases 有沒有新版本。發現新版本時，
+會先跳出確認對話框——在你按下 **Update Now** 之前，不會下載或安裝任何東西。
+如果發現新版本時引擎正在執行，會請你先手動停止引擎，而不是強行中斷它。確認之後，
+會下載新的安裝檔、結束程式、靜默重新安裝（會替換安裝目錄裡的程式檔案；
+`%APPDATA%\PixelPulse\` 裡的規則與擷取到的圖片完全不受影響），並自動重新開啟。
+詳見 `gui/electron/updater.js`。
+
 ## 授權、免責聲明與使用者須知
 
 PixelPulse 採用 [MIT 授權](LICENSE)。關鍵風險提醒請見
@@ -187,6 +196,7 @@ gui/
 ├─ electron/
 │  ├─ main.js        # 視窗、系統匣、框選/點選工具視窗，以及（打包後的正式版）
 │  │                  # 自動啟動內建伺服器 exe
+│  ├─ updater.js     # GitHub 版本檢查、確認對話框、靜默重新安裝
 │  └─ preload.cjs     # contextBridge -> window.pixelpulse.{pickRegion,pickPoint}
 └─ src/
    ├─ components/

@@ -111,6 +111,18 @@ a user manual, user notice, terms of service, disclaimer, and privacy
 policy, each available in English and 繁體中文 via the language switcher
 (also on the Settings page). Source: `gui/src/content/`.
 
+### Updates
+
+The installed app checks GitHub Releases for a newer version once per
+launch. If one's found, it shows a confirmation dialog before doing
+anything — nothing downloads or installs without you clicking **Update
+Now**. If the engine is running when an update is found, it tells you to
+stop the engine first rather than interrupting it. Once confirmed, it
+downloads the new installer, quits, reinstalls silently (this replaces the
+program files under the install directory; your rules and captured images
+in `%APPDATA%\PixelPulse\` are untouched), and reopens automatically. See
+`gui/electron/updater.js`.
+
 ## License, disclaimer, and user notice
 
 PixelPulse is [MIT licensed](LICENSE). See [DISCLAIMER.md](DISCLAIMER.md) for
@@ -211,6 +223,7 @@ gui/
 ├─ electron/
 │  ├─ main.js       # window, tray, region/point picker window, and (in a
 │  │                 # packaged build) spawning the bundled server exe
+│  ├─ updater.js    # GitHub release check, confirm dialog, silent reinstall
 │  └─ preload.cjs    # contextBridge -> window.pixelpulse.{pickRegion,pickPoint}
 └─ src/
    ├─ components/

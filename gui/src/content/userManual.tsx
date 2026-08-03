@@ -98,6 +98,15 @@ function En() {
         </li>
       </ul>
 
+      <h3>Updates</h3>
+      <p>
+        The installed app checks for a newer version on GitHub once per launch. If one's found, you'll see a
+        confirmation dialog — nothing downloads or installs until you click <strong>Update Now</strong>. If the
+        engine is running when an update is found, you'll be asked to stop it first rather than having it
+        interrupted. Once confirmed, the update downloads, the app closes, reinstalls itself, and reopens
+        automatically — your rules and captured images aren't touched.
+      </p>
+
       <h3>Good habits</h3>
       <ul>
         <li>Keep your ROI (the region you select) as small as you can — smaller regions are scanned faster and cause fewer false matches.</li>
@@ -196,6 +205,14 @@ function Zh() {
           的 <em>Quit</em>。
         </li>
       </ul>
+
+      <h3>更新機制</h3>
+      <p>
+        安裝好的 App 每次啟動都會檢查一次 GitHub 上有沒有新版本。發現新版本時會跳出確認對話框 —— 在你按下
+        <strong>Update Now</strong> 之前，不會下載或安裝任何東西。如果發現新版本時引擎正在執行，會請你先手動停止，
+        而不是強行中斷它。確認之後，更新會自動下載、程式會關閉、重新安裝，並自動重新開啟 —— 你的規則與擷取到的
+        圖片不會受到影響。
+      </p>
 
       <h3>建議的使用習慣</h3>
       <ul>
