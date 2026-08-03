@@ -31,3 +31,12 @@ class EngineEvent:
     y: int | None = None
     confidence: float | None = None
     message: str | None = None
+    # Structured count for `engine_started`, so GUI clients can render it in
+    # their own language instead of parsing an English sentence out of
+    # `message`. (`message` stays free-text for cases like `rule_error` where
+    # the content -- an exception string -- can't be translated anyway.)
+    #
+    # `engine_started` 事件的規則數量，讓 GUI 端能用自己的語言組句，而不必
+    # 從 `message` 這個英文句子裡解析數字。（`message` 仍保留給像
+    # `rule_error` 這種內容本來就無法翻譯的情況，例如例外訊息文字。）
+    rule_count: int | None = None

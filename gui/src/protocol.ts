@@ -77,6 +77,7 @@ export interface EngineEvent {
   y: number | null
   confidence: number | null
   message: string | null
+  rule_count: number | null
 }
 
 // --- Client -> server --------------------------------------------------

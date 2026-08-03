@@ -188,7 +188,7 @@ class RuleEngine:
     def run_forever(self) -> None:
         self._stop_event.clear()
         logger.info("Engine started with %d active rule(s), max_workers=%d.", len(self._states), self._max_workers)
-        self._emit(EngineEvent(type="engine_started", message=f"{len(self._states)} active rule(s)"))
+        self._emit(EngineEvent(type="engine_started", rule_count=len(self._states)))
         if self._kill_switch:
             self._kill_switch.start()
 

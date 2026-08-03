@@ -9,7 +9,9 @@ function describe(event: EngineEvent, t: TranslateFn): string {
 
   switch (event.type) {
     case 'engine_started':
-      return event.message ? t('logPanel.engineStartedWithMessage', { message: event.message }) : t('logPanel.engineStarted')
+      return event.rule_count != null
+        ? t('logPanel.engineStartedWithCount', { count: event.rule_count })
+        : t('logPanel.engineStarted')
     case 'engine_stopped':
       return t('logPanel.engineStopped')
     case 'rule_matched':

@@ -96,7 +96,7 @@
     "title": "活動紀錄",
     "empty": "目前沒有任何活動紀錄。",
     "engineStarted": "引擎已啟動",
-    "engineStartedWithMessage": "引擎已啟動（{message}）",
+    "engineStartedWithCount": "引擎已啟動（{count} 條規則啟用中）",
     "engineStopped": "引擎已停止",
     "ruleMatched": "「{name}」比對成功",
     "ruleDryRun": "「{name}」符合條件（dry-run，未執行動作）",

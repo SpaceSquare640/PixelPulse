@@ -96,7 +96,7 @@
     "title": "Activity",
     "empty": "No activity yet.",
     "engineStarted": "Engine started",
-    "engineStartedWithMessage": "Engine started ({message})",
+    "engineStartedWithCount": "Engine started ({count} active rule(s))",
     "engineStopped": "Engine stopped",
     "ruleMatched": "\"{name}\" matched",
     "ruleDryRun": "\"{name}\" would have triggered (dry-run, no action taken)",
