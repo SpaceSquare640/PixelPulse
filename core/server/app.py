@@ -44,7 +44,7 @@ from core.server.protocol import (
     RuleToggleMessage,
     parse_client_message,
 )
-from core.server.service import EngineService, RuleNotFoundError
+from core.server.service import DEFAULT_MAX_WORKERS, EngineService, RuleNotFoundError
 
 logger = logging.getLogger("pixelpulse.server.app")
 
@@ -78,7 +78,11 @@ class ConnectionManager:
             self.disconnect(websocket)
 
 
-def create_app(rules_path: str = DEFAULT_RULES_PATH, targets_dir: str = "targets") -> FastAPI:
+def create_app(
+    rules_path: str = DEFAULT_RULES_PATH,
+    targets_dir: str = "targets",
+    max_workers: int = DEFAULT_MAX_WORKERS,
+) -> FastAPI:
     manager = ConnectionManager()
     # Populated on startup; lets the engine's background thread schedule a
     # broadcast onto the asyncio loop via call_soon_threadsafe.
@@ -92,7 +96,9 @@ def create_app(rules_path: str = DEFAULT_RULES_PATH, targets_dir: str = "targets
         if loop is not None:
             loop.call_soon_threadsafe(lambda: asyncio.create_task(manager.broadcast(message)))
 
-    service = EngineService(rules_path=rules_path, event_sink=on_engine_event, targets_dir=targets_dir)
+    service = EngineService(
+        rules_path=rules_path, event_sink=on_engine_event, targets_dir=targets_dir, max_workers=max_workers
+    )
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:

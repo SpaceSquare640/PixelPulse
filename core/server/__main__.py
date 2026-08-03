@@ -18,6 +18,7 @@ import uvicorn
 
 from core.platform_windows import enable_dpi_awareness
 from core.server.app import DEFAULT_RULES_PATH, create_app
+from core.server.service import DEFAULT_MAX_WORKERS
 
 
 def parse_args() -> argparse.Namespace:
@@ -33,6 +34,13 @@ def parse_args() -> argparse.Namespace:
         "--targets-dir",
         default="targets",
         help="Directory the region picker saves captured template images into. (框選工具儲存樣板圖片的資料夾)",
+    )
+    parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=DEFAULT_MAX_WORKERS,
+        help="Rules to scan in parallel (Phase 5); 1 = sequential, matching Phase 1-4 behaviour. "
+        "(平行掃描的規則數，Phase 5 新增；1 = 循序掃描，與 Phase 1-4 行為相同)",
     )
     parser.add_argument("--host", default="127.0.0.1", help="Bind address. (綁定位址，預設僅限本機)")
     parser.add_argument("--port", type=int, default=8765, help="Bind port. (綁定埠號)")
@@ -50,7 +58,7 @@ def main() -> None:
 
     enable_dpi_awareness()
 
-    app = create_app(rules_path=args.rules_path, targets_dir=args.targets_dir)
+    app = create_app(rules_path=args.rules_path, targets_dir=args.targets_dir, max_workers=args.max_workers)
     uvicorn.run(app, host=args.host, port=args.port, log_level=args.log_level.lower())
 
 

@@ -1,17 +1,17 @@
-# PixelPulse — 核心引擎 + GUI（Phase 4）
+# PixelPulse — 核心引擎 + GUI（Phase 5）
 
 English version: [README.md](README.md)
 
 持續監控螢幕上的某個區域，跟目標圖片或指定像素顏色比對，命中後觸發滑鼠/鍵盤動作
-——現在也支援多步驟巨集。現在有兩種執行方式：
+——現在也支援多步驟巨集，並可用執行緒池平行掃描多條規則。現在有兩種執行方式：
 
 - **命令列**（Phase 1，仍可獨立使用）：直接用 `rules.json` 檔案驅動引擎，不需要 GUI。
 - **GUI**（Phase 2-4）：Electron + React 前端透過本機 WebSocket 跟同一個引擎溝通 ——
   連線/引擎狀態、附螢幕框選工具與即時比對預覽的規則編輯器、巨集步驟編輯器、可拖曳
   排序且有縮圖的規則清單，以及即時活動紀錄。
 
-完整架構與開發時程請見 `PixelPulse_Document/` 裡的專案規劃（Phase 5 以後會加入
-原生（C++）效能加速模組與打包發布）。
+完整架構與開發時程請見 `PixelPulse_Document/` 裡的專案規劃（Phase 6 以後會加入
+打包發布）。
 
 ## 環境建置（Python 核心）
 
@@ -81,11 +81,31 @@ wait for image）另外有逾時時間與重試次數 —— 重試完還是找�
 可以直接編輯 `rules.json` 把該步驟的 `"onTimeout"` 設成 `"skip"`（編輯器介面目前
 還沒有提供這個開關）。
 
+## 效能：平行掃描
+
+`cv2.matchTemplate`（本身已是原生 OpenCV 程式碼）主宰了掃描的耗時，而且它執行運算
+期間會釋放 Python 的 GIL——所以把多條規則的掃描工作分散到執行緒池，不用寫任何
+C++ 就能拿到真正的多核心加速（實測 4–16 個 workers 約有 ~3–4.6 倍加速；細節見
+`benchmarks/` 與 `PixelPulse_Document/` 裡的 Phase 5 進度報告，裡面說明了為什麼
+手寫 C++ 模組**不是**這裡該做的事）。用 `--max-workers N` 選擇性開啟：
+
+```bash
+python -m core.run rules.json --max-workers 4
+python -m core.server --max-workers 4
+```
+
+GUI 伺服器預設是 `min(4, CPU 核心數)`；命令列版本預設維持 `1`（循序），保持行為
+簡單、可預期。只有規則數量較多、或 ROI 較大時才有感——只有一兩條小規則的話沒什麼
+好平行的。
+
 ## 測試
 
 ```bash
-pytest                     # Python：核心引擎 + 伺服器（43 個測試）
+pytest                     # Python：核心引擎 + 伺服器（46 個測試）
 cd gui && npm run build    # TypeScript：對前端做型別檢查
+python -m benchmarks.bench_matching   # 效能：時間到底花在哪裡
+python -m benchmarks.bench_parallel   # 效能：循序 vs 執行緒池
+python -m benchmarks.bench_engine     # 效能：同上，但走真正的 RuleEngine 路徑
 ```
 
 ## 目錄結構
@@ -97,12 +117,14 @@ core/
 ├─ automation/      # 滑鼠鍵盤後端 + 緊急停止熱鍵
 ├─ rules/
 │  ├─ models.py     # 規則/觸發條件/動作/巨集步驟格式定義
-│  ├─ engine.py      # 主掃描迴圈、引擎事件
+│  ├─ engine.py      # 主掃描迴圈、引擎事件、可選的平行偵測
 │  └─ macro.py        # MacroExecutor：執行多步驟動作
 ├─ server/         # FastAPI + WebSocket 伺服器：引擎控制、規則增刪改查、
 │                   # 框選/點選擷取、即時比對預覽、供 GUI 縮圖用的 /targets 靜態檔案
 ├─ platform_windows.py
 └─ run.py          # 命令列進入點（Phase 1，無 GUI）
+
+benchmarks/         # Phase 5「先量測再優化」決策背後的效能測試腳本（見上方說明）
 
 gui/
 ├─ electron/

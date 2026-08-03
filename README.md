@@ -1,4 +1,4 @@
-# PixelPulse — Core Engine + GUI (Phase 4)
+# PixelPulse — Core Engine + GUI (Phase 5)
 
 繁體中文版：[README.zh-TW.md](README.zh-TW.md)
 
@@ -15,7 +15,7 @@ finds a hit. Two ways to run it:
   log.
 
 See the project plan in `PixelPulse_Document/` for the full architecture and
-roadmap (Phase 5+ adds native/C++ acceleration and packaging).
+roadmap (Phase 6+ adds packaging).
 
 ## Setup (Python core)
 
@@ -94,11 +94,33 @@ reports a `rule_error` you'll see in the activity log; this can be changed
 to skip that step instead by editing `"onTimeout": "skip"` directly in
 `rules.json` (not yet exposed as a toggle in the editor UI).
 
+## Performance: parallel scanning
+
+`cv2.matchTemplate` (already native OpenCV code) dominates scan cost, and it
+releases Python's GIL while running — so scanning many rules across a
+thread pool gives real multi-core speedup with zero custom C++ (benchmarked
+~3–4.6x with 4–16 workers; see `benchmarks/` and the Phase 5 progress report
+in `PixelPulse_Document/` for why a hand-written C++ module was *not* the
+right move here). Opt in with `--max-workers N`:
+
+```bash
+python -m core.run rules.json --max-workers 4
+python -m core.server --max-workers 4
+```
+
+The GUI server defaults to `min(4, cpu_count)`; the CLI defaults to `1`
+(sequential) to keep its behaviour simple and predictable. Only worth
+raising if you have several rules and/or large ROIs — with just a couple of
+small rules there's nothing to parallelize.
+
 ## Tests
 
 ```bash
-pytest       # Python: core engine + server (43 tests)
+pytest       # Python: core engine + server (46 tests)
 cd gui && npm run build   # TypeScript: type-checks the renderer
+python -m benchmarks.bench_matching   # perf: where the time actually goes
+python -m benchmarks.bench_parallel   # perf: sequential vs thread-pool
+python -m benchmarks.bench_engine     # perf: same, through the real RuleEngine path
 ```
 
 ## Layout
@@ -110,13 +132,16 @@ core/
 ├─ automation/     # mouse/keyboard backend + emergency-stop hotkey
 ├─ rules/
 │  ├─ models.py    # rule/trigger/action/macro-step schema
-│  ├─ engine.py     # main scan loop, engine events
+│  ├─ engine.py     # main scan loop, engine events, optional parallel detection
 │  └─ macro.py       # MacroExecutor: runs a multi-step action
 ├─ server/        # FastAPI + WebSocket server: engine control, rule CRUD,
 │                  # region/point capture, live match preview, static
 │                  # /targets file serving for GUI thumbnails
 ├─ platform_windows.py
 └─ run.py         # CLI entry point (Phase 1, no GUI)
+
+benchmarks/        # perf scripts backing the Phase 5 "measure before
+                    # optimizing" decision (see README section above)
 
 gui/
 ├─ electron/

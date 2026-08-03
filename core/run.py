@@ -35,6 +35,13 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         help="Seconds between scans, default 0.2 = 5 scans/sec. (每次掃描間隔秒數，預設 0.2 秒，即每秒 5 次)",
     )
     parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=1,
+        help="Rules to scan in parallel (Phase 5); 1 (default) = sequential. "
+        "(平行掃描的規則數，Phase 5 新增；預設 1 = 循序掃描)",
+    )
+    parser.add_argument(
         "--log-level",
         default="INFO",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
@@ -63,6 +70,8 @@ def main(argv: list[str] | None = None) -> int:
             input_backend=PyAutoGUIBackend(),
             kill_switch=kill_switch,
             scan_interval_s=args.interval,
+            max_workers=args.max_workers,
+            capture_factory=ScreenCapture if args.max_workers > 1 else None,
         )
         try:
             engine.run_forever()

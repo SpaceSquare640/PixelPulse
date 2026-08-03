@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import base64
 import logging
+import os
 import re
 import threading
 import uuid
@@ -51,6 +52,16 @@ def _slugify(name: str) -> str:
     return slug or "target"
 
 
+# Phase 5 benchmarking (see Source_Code/benchmarks/) found real ~3x wall-clock
+# speedup at 4 workers scanning 30 rules, with diminishing returns beyond
+# that -- a reasonable default without over-provisioning threads/OS capture
+# handles on machines with few rules.
+# Phase 5 效能測試（見 Source_Code/benchmarks/）發現在 4 個工作執行緒、30 條
+# 規則的情境下，實測約有 3 倍的實際加速，超過這個數字後報酬遞減——在規則數
+# 不多的機器上，這是一個不會過度配置執行緒/OS 擷取控制代碼的合理預設值。
+DEFAULT_MAX_WORKERS = min(4, os.cpu_count() or 1)
+
+
 class EngineService:
     """Thread-safe-enough (single writer via WS handler) façade the server uses.
 
@@ -63,12 +74,14 @@ class EngineService:
         event_sink: Callable[[EngineEvent], None] | None = None,
         scan_interval_s: float = 0.2,
         targets_dir: str | Path = "targets",
+        max_workers: int = DEFAULT_MAX_WORKERS,
     ) -> None:
         self._rules_path = Path(rules_path)
         self._rules: list[RuleConfig] = load_rules(self._rules_path) if self._rules_path.exists() else []
         self._event_sink = event_sink
         self._scan_interval_s = scan_interval_s
         self._targets_dir = Path(targets_dir)
+        self._max_workers = max_workers
 
         self._engine: RuleEngine | None = None
         self._engine_capture: ScreenCapture | None = None
@@ -203,6 +216,8 @@ class EngineService:
             kill_switch=KillSwitch(),
             scan_interval_s=self._scan_interval_s,
             on_event=self._event_sink,
+            max_workers=self._max_workers,
+            capture_factory=ScreenCapture if self._max_workers > 1 else None,
         )
         self._thread = threading.Thread(target=self._engine.run_forever, daemon=True)
         self._thread.start()
