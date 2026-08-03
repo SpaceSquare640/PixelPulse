@@ -1,0 +1,65 @@
+name: "🐛 錯誤回報（繁體中文）"
+description: 回報一個沒有正常運作的問題
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感謝你花時間回報問題！請盡量提供詳細的資訊。
+  - type: input
+    id: version
+    attributes:
+      label: PixelPulse 版本
+      description: 可在「設定」頁面看到，或參考安裝檔的檔名。
+      placeholder: v0.11.0
+    validations:
+      required: true
+  - type: dropdown
+    id: run-mode
+    attributes:
+      label: 你是用哪種方式執行 PixelPulse？
+      options:
+        - 已安裝的 Windows App（GUI）
+        - 從原始碼執行（GUI）
+        - 只有 CLI
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 發生了什麼事？
+      description: 請清楚描述遇到的問題。
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 你原本預期的結果是什麼？
+    validations:
+      required: false
+  - type: textarea
+    id: repro
+    attributes:
+      label: 重現步驟
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: 相關紀錄／活動紀錄輸出
+      description: 貼上 App 裡「活動紀錄」頁面或終端機輸出中相關的內容，會自動用程式碼區塊呈現。
+      render: shell
+    validations:
+      required: false
+  - type: input
+    id: os
+    attributes:
+      label: Windows 版本
+      placeholder: Windows 11 24H2
+    validations:
+      required: false
