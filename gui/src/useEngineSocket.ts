@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useLanguage } from './i18n/LanguageContext'
 import type { ClientMessage, EngineEvent, RuleConfig, ServerMessage, TriggerConfig } from './protocol'
 import { WS_URL } from './serverConfig'
 
@@ -28,6 +29,7 @@ function isResponseType(type: ServerMessage['type']): type is ResponseMessage['t
 }
 
 export function useEngineSocket() {
+  const { t } = useLanguage()
   const [connectionState, setConnectionState] = useState<ConnectionState>('connecting')
   const [rules, setRules] = useState<RuleConfig[]>([])
   const [engineStatus, setEngineStatus] = useState<EngineStatus>({ running: false, ruleCount: 0 })
@@ -136,21 +138,21 @@ export function useEngineSocket() {
   const request = useCallback((message: ClientMessage): Promise<ResponseMessage> => {
     return new Promise((resolve, reject) => {
       if (socketRef.current?.readyState !== WebSocket.OPEN) {
-        reject(new Error('Not connected to the PixelPulse server.'))
+        reject(new Error(t('socket.notConnected')))
         return
       }
       if (pendingRequestRef.current) {
-        reject(new Error('Another request is already in progress.'))
+        reject(new Error(t('socket.requestInProgress')))
         return
       }
       const timer = setTimeout(() => {
         pendingRequestRef.current = null
-        reject(new Error('Request timed out.'))
+        reject(new Error(t('socket.requestTimedOut')))
       }, REQUEST_TIMEOUT_MS)
       pendingRequestRef.current = { resolve, reject, timer }
       socketRef.current.send(JSON.stringify(message))
     })
-  }, [])
+  }, [t])
 
   const startEngine = useCallback(() => send({ type: 'engine.start' }), [send])
   const stopEngine = useCallback(() => send({ type: 'engine.stop' }), [send])

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import type { RuleConfig } from '../protocol'
+import { useLanguage } from '../i18n/LanguageContext'
+import type { ActionConfig, RuleConfig, TriggerConfig } from '../protocol'
 import { HTTP_ORIGIN } from '../serverConfig'
 
 interface Props {
@@ -28,6 +29,7 @@ function thumbnailFor(rule: RuleConfig) {
 
 export function RuleList({ rules, onToggle, onDelete, onReorder, onNewRule }: Props) {
   const [dragName, setDragName] = useState<string | null>(null)
+  const { t } = useLanguage()
 
   function handleDrop(targetName: string) {
     if (!dragName || dragName === targetName) return
@@ -43,13 +45,13 @@ export function RuleList({ rules, onToggle, onDelete, onReorder, onNewRule }: Pr
   return (
     <section className="panel">
       <div className="panel-header">
-        <h2>Rules</h2>
+        <h2>{t('ruleList.title')}</h2>
         <button type="button" className="button button--primary" onClick={onNewRule}>
-          New Rule
+          {t('ruleList.newRule')}
         </button>
       </div>
       {rules.length === 0 ? (
-        <p className="muted">No rules yet. Click "New Rule" to create one.</p>
+        <p className="muted">{t('ruleList.empty')}</p>
       ) : (
         <ul className="rule-list">
           {rules.map((rule) => (
@@ -62,7 +64,7 @@ export function RuleList({ rules, onToggle, onDelete, onReorder, onNewRule }: Pr
               onDrop={() => handleDrop(rule.name)}
               onDragEnd={() => setDragName(null)}
             >
-              <span className="rule-card__handle" title="Drag to reorder">
+              <span className="rule-card__handle" title={t('ruleList.dragToReorder')}>
                 ⠿
               </span>
               {thumbnailFor(rule)}
@@ -76,13 +78,13 @@ export function RuleList({ rules, onToggle, onDelete, onReorder, onNewRule }: Pr
                   <span className="rule-card__name">{rule.name}</span>
                 </label>
                 <div className="rule-card__badges">
-                  <span className="badge">{rule.trigger.kind}</span>
-                  <span className="badge">{rule.action.kind}</span>
-                  {rule.dryRun && <span className="badge badge--warning">dry-run</span>}
+                  <span className="badge">{t(`triggerKind.${rule.trigger.kind as TriggerConfig['kind']}`)}</span>
+                  <span className="badge">{t(`actionKind.${rule.action.kind as ActionConfig['kind']}`)}</span>
+                  {rule.dryRun && <span className="badge badge--warning">{t('ruleList.badgeDryRun')}</span>}
                 </div>
               </div>
               <button type="button" className="button button--ghost" onClick={() => onDelete(rule.name)}>
-                Delete
+                {t('common.delete')}
               </button>
             </li>
           ))}

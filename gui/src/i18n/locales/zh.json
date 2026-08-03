@@ -1,0 +1,118 @@
+{
+  "common": {
+    "cancel": "取消",
+    "back": "上一步",
+    "next": "下一步",
+    "delete": "刪除",
+    "close": "關閉"
+  },
+  "statusBar": {
+    "connected": "已連線",
+    "connecting": "連線中…",
+    "disconnected": "已中斷連線",
+    "help": "說明"
+  },
+  "engineControls": {
+    "running": "執行中",
+    "stopped": "已停止",
+    "ruleCountLoaded": "已載入 {count} 條規則",
+    "start": "啟動",
+    "stop": "停止"
+  },
+  "ruleList": {
+    "title": "規則",
+    "newRule": "新增規則",
+    "empty": "尚未有任何規則，點擊「新增規則」建立第一條。",
+    "dragToReorder": "拖曳以調整順序",
+    "badgeDryRun": "dry-run"
+  },
+  "triggerKind": {
+    "template": "圖片",
+    "pixel": "像素"
+  },
+  "actionKind": {
+    "click": "點擊",
+    "double_click": "雙擊",
+    "key": "按鍵",
+    "type": "輸入文字",
+    "macro": "巨集",
+    "wait_for": "等待圖片"
+  },
+  "ruleEditor": {
+    "title": "新增規則",
+    "stepTrigger": "觸發條件",
+    "stepAction": "動作",
+    "stepSafety": "安全參數",
+    "pickerBridgeNotice": "框選/點選功能需要在桌面應用程式中使用（一般瀏覽器分頁無法使用）。",
+    "triggerTypeLabel": "觸發條件類型",
+    "triggerTemplate": "圖片（樣板匹配）",
+    "triggerPixel": "像素顏色",
+    "selectRegion": "在螢幕上框選區域",
+    "picking": "選取中…",
+    "pickPoint": "在螢幕上點選一個點",
+    "capturedTargetAlt": "已擷取的目標",
+    "matchThreshold": "比對閾值：{value}",
+    "colourTolerance": "顏色容許誤差：{value}",
+    "pixelSwatchAt": "rgb({rgb})，位於 ({x}, {y})",
+    "testMatch": "測試比對",
+    "testing": "測試中…",
+    "matchedAt": "已比對到，位置 ({x}, {y})",
+    "confidenceSuffix": " — 信心值 {value}%",
+    "noMatch": "目前沒有找到符合的目標",
+    "actionLabel": "動作",
+    "actionClick": "點擊",
+    "actionDoubleClick": "雙擊",
+    "actionKey": "按鍵",
+    "actionType": "輸入文字",
+    "actionMacro": "巨集（多步驟）",
+    "mouseButton": "滑鼠按鍵",
+    "buttonLeft": "左鍵",
+    "buttonRight": "右鍵",
+    "buttonMiddle": "中鍵",
+    "keyLabel": "按鍵（例如「enter」、「esc」）",
+    "textToType": "要輸入的文字",
+    "ruleName": "規則名稱",
+    "ruleNamePlaceholder": "例如：點擊確認按鈕",
+    "duplicateNameError": "已經有一條同名的規則了。",
+    "cooldown": "冷卻時間（毫秒）",
+    "maxTriggers": "最多觸發次數（可選）",
+    "dryRunLabel": "Dry run（只記錄命中結果，先不執行點擊/輸入）",
+    "saveRule": "儲存規則"
+  },
+  "macroEditor": {
+    "pickerBridgeNotice": "框選目標需要在桌面應用程式中使用（一般瀏覽器分頁無法使用）。",
+    "noSteps": "還沒有任何步驟，點下方按鈕新增一個。",
+    "selectRegion": "在螢幕上框選區域",
+    "picking": "選取中…",
+    "rePickTarget": "重新框選目標",
+    "keyLabel": "按鍵（例如「enter」、「esc」）",
+    "textToType": "要輸入的文字",
+    "delayBefore": "執行前延遲（毫秒）",
+    "timeout": "逾時時間（毫秒）",
+    "retries": "重試次數",
+    "addStep": "＋ 新增步驟"
+  },
+  "logPanel": {
+    "title": "活動紀錄",
+    "empty": "目前沒有任何活動紀錄。",
+    "engineStarted": "引擎已啟動",
+    "engineStartedWithMessage": "引擎已啟動（{message}）",
+    "engineStopped": "引擎已停止",
+    "ruleMatched": "「{name}」比對成功",
+    "ruleDryRun": "「{name}」符合條件（dry-run，未執行動作）",
+    "ruleTriggered": "「{name}」已觸發",
+    "ruleError": "「{name}」失敗：{message}（本次執行已停用此規則）",
+    "unknownError": "未知錯誤",
+    "atCoords": "，位置 ({x}, {y})",
+    "confidenceSuffix": "，信心值 {value}%"
+  },
+  "picker": {
+    "clickToPickColour": "點擊一個點以擷取其顏色 — 按 Esc 取消",
+    "dragToSelectRegion": "拖曳以框選一個區域 — 按 Esc 取消"
+  },
+  "socket": {
+    "notConnected": "尚未連線到 PixelPulse 伺服器。",
+    "requestInProgress": "已經有一個請求正在進行中。",
+    "requestTimedOut": "請求逾時。"
+  }
+}

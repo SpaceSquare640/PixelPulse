@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 
 interface Props {
   mode: 'region' | 'point'
@@ -21,6 +22,7 @@ interface Point {
 // 這個元件沒有畫東西的地方，真實桌面就會直接透出來。用四條「遮罩」把目前
 // 選取範圍以外的地方調暗，使用者不需要真的截圖也能看清楚自己選了什麼。
 export function PickerOverlay({ mode, originX, originY }: Props) {
+  const { t } = useLanguage()
   const [start, setStart] = useState<Point | null>(null)
   const [current, setCurrent] = useState<Point | null>(null)
 
@@ -75,7 +77,7 @@ export function PickerOverlay({ mode, originX, originY }: Props) {
   if (mode === 'point') {
     return (
       <div className="picker-overlay picker-overlay--point" onClick={handlePointClick}>
-        <div className="picker-hint">Click a point to pick its colour — Esc to cancel</div>
+        <div className="picker-hint">{t('picker.clickToPickColour')}</div>
       </div>
     )
   }
@@ -97,7 +99,7 @@ export function PickerOverlay({ mode, originX, originY }: Props) {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
-      {!selection && <div className="picker-hint">Drag to select a region — Esc to cancel</div>}
+      {!selection && <div className="picker-hint">{t('picker.dragToSelectRegion')}</div>}
 
       {selection && (
         <>

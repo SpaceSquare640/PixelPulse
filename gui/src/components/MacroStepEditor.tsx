@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 import type { MacroStep, MacroStepKind } from '../protocol'
 import { HTTP_ORIGIN } from '../serverConfig'
 
@@ -13,13 +14,7 @@ interface Props {
   captureCrop: (roi: [number, number, number, number], name: string) => Promise<CaptureCropResult>
 }
 
-const KIND_LABELS: Record<MacroStepKind, string> = {
-  click: 'Click',
-  double_click: 'Double-click',
-  wait_for: 'Wait for image',
-  key: 'Press key',
-  type: 'Type text',
-}
+const KIND_OPTIONS: MacroStepKind[] = ['click', 'double_click', 'wait_for', 'key', 'type']
 
 const NEEDS_TARGET: MacroStepKind[] = ['click', 'double_click', 'wait_for']
 
@@ -33,6 +28,7 @@ function emptyStep(): MacroStep {
 }
 
 export function MacroStepEditor({ steps, onChange, captureCrop }: Props) {
+  const { t } = useLanguage()
   const [pickingIndex, setPickingIndex] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -78,11 +74,11 @@ export function MacroStepEditor({ steps, onChange, captureCrop }: Props) {
   return (
     <div className="macro-editor">
       {!hasPickerBridge && (
-        <div className="notice">Target picking needs the desktop app (not available in a plain browser tab).</div>
+        <div className="notice">{t('macroEditor.pickerBridgeNotice')}</div>
       )}
       {error && <div className="notice notice--danger">{error}</div>}
 
-      {steps.length === 0 && <p className="muted">No steps yet. Add one below.</p>}
+      {steps.length === 0 && <p className="muted">{t('macroEditor.noSteps')}</p>}
 
       <ol className="macro-step-list">
         {steps.map((step, index) => (
@@ -90,9 +86,9 @@ export function MacroStepEditor({ steps, onChange, captureCrop }: Props) {
             <div className="macro-step__row">
               <span className="macro-step__index">{index + 1}</span>
               <select value={step.kind} onChange={(e) => updateStep(index, { kind: e.target.value as MacroStepKind })}>
-                {(Object.entries(KIND_LABELS) as [MacroStepKind, string][]).map(([kind, label]) => (
+                {KIND_OPTIONS.map((kind) => (
                   <option key={kind} value={kind}>
-                    {label}
+                    {t(`actionKind.${kind}`)}
                   </option>
                 ))}
               </select>
@@ -110,14 +106,18 @@ export function MacroStepEditor({ steps, onChange, captureCrop }: Props) {
                 </button>
               </div>
               <button type="button" className="button button--ghost" onClick={() => removeStep(index)}>
-                Delete
+                {t('common.delete')}
               </button>
             </div>
 
             {NEEDS_TARGET.includes(step.kind) && (
               <div className="macro-step__row">
                 <button type="button" className="button" disabled={!hasPickerBridge || pickingIndex !== null} onClick={() => handlePickForStep(index)}>
-                  {pickingIndex === index ? 'Picking…' : step.target ? 'Re-pick target' : 'Select Region on Screen'}
+                  {pickingIndex === index
+                    ? t('macroEditor.picking')
+                    : step.target
+                      ? t('macroEditor.rePickTarget')
+                      : t('macroEditor.selectRegion')}
                 </button>
                 {step.target && <img className="macro-step__thumb" src={thumbnailUrl(step.target)} alt="" />}
               </div>
@@ -125,21 +125,21 @@ export function MacroStepEditor({ steps, onChange, captureCrop }: Props) {
 
             {step.kind === 'key' && (
               <label className="field">
-                <span>Key (e.g. "enter", "esc")</span>
+                <span>{t('macroEditor.keyLabel')}</span>
                 <input type="text" value={step.key ?? ''} onChange={(e) => updateStep(index, { key: e.target.value })} />
               </label>
             )}
 
             {step.kind === 'type' && (
               <label className="field">
-                <span>Text to type</span>
+                <span>{t('macroEditor.textToType')}</span>
                 <input type="text" value={step.text ?? ''} onChange={(e) => updateStep(index, { text: e.target.value })} />
               </label>
             )}
 
             <div className="macro-step__row macro-step__row--timing">
               <label className="field field--inline">
-                <span>Delay before (ms)</span>
+                <span>{t('macroEditor.delayBefore')}</span>
                 <input
                   type="number"
                   min={0}
@@ -150,7 +150,7 @@ export function MacroStepEditor({ steps, onChange, captureCrop }: Props) {
               {NEEDS_TARGET.includes(step.kind) && (
                 <>
                   <label className="field field--inline">
-                    <span>Timeout (ms)</span>
+                    <span>{t('macroEditor.timeout')}</span>
                     <input
                       type="number"
                       min={100}
@@ -159,7 +159,7 @@ export function MacroStepEditor({ steps, onChange, captureCrop }: Props) {
                     />
                   </label>
                   <label className="field field--inline">
-                    <span>Retries</span>
+                    <span>{t('macroEditor.retries')}</span>
                     <input
                       type="number"
                       min={0}
@@ -175,7 +175,7 @@ export function MacroStepEditor({ steps, onChange, captureCrop }: Props) {
       </ol>
 
       <button type="button" className="button button--ghost" onClick={addStep}>
-        + Add Step
+        {t('macroEditor.addStep')}
       </button>
     </div>
   )

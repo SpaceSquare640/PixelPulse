@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 import type { ActionKind, MacroStep, RuleConfig, TriggerConfig } from '../protocol'
 import { MacroStepEditor } from './MacroStepEditor'
 
@@ -27,9 +28,10 @@ interface Props {
   previewTrigger: (trigger: TriggerConfig) => Promise<PreviewResult>
 }
 
-const STEPS = ['Trigger', 'Action', 'Safety'] as const
+const STEP_KEYS = ['stepTrigger', 'stepAction', 'stepSafety'] as const
 
 export function RuleEditor({ existingNames, onClose, onSave, captureCrop, capturePixel, previewTrigger }: Props) {
+  const { t } = useLanguage()
   const [step, setStep] = useState(0)
 
   const [name, setName] = useState('')
@@ -164,11 +166,11 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal__header">
-          <h2>New Rule</h2>
+          <h2>{t('ruleEditor.title')}</h2>
           <div className="stepper">
-            {STEPS.map((label, i) => (
-              <span key={label} className={`stepper__item ${i === step ? 'stepper__item--active' : ''}`}>
-                {i + 1}. {label}
+            {STEP_KEYS.map((key, i) => (
+              <span key={key} className={`stepper__item ${i === step ? 'stepper__item--active' : ''}`}>
+                {i + 1}. {t(`ruleEditor.${key}`)}
               </span>
             ))}
           </div>
@@ -177,7 +179,7 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
         <div className="modal__body">
           {!hasPickerBridge && (
             <div className="notice">
-              Region/point picking needs the desktop app (not available in a plain browser tab).
+              {t('ruleEditor.pickerBridgeNotice')}
             </div>
           )}
           {captureError && <div className="notice notice--danger">{captureError}</div>}
@@ -185,21 +187,21 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
           {step === 0 && (
             <div className="form-stack">
               <label className="field">
-                <span>Trigger type</span>
+                <span>{t('ruleEditor.triggerTypeLabel')}</span>
                 <div className="segmented">
                   <button
                     type="button"
                     className={triggerKind === 'template' ? 'segmented__option segmented__option--active' : 'segmented__option'}
                     onClick={() => setTriggerKind('template')}
                   >
-                    Image (template)
+                    {t('ruleEditor.triggerTemplate')}
                   </button>
                   <button
                     type="button"
                     className={triggerKind === 'pixel' ? 'segmented__option segmented__option--active' : 'segmented__option'}
                     onClick={() => setTriggerKind('pixel')}
                   >
-                    Pixel colour
+                    {t('ruleEditor.triggerPixel')}
                   </button>
                 </div>
               </label>
@@ -207,13 +209,13 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
               {triggerKind === 'template' ? (
                 <>
                   <button type="button" className="button" disabled={!hasPickerBridge || picking} onClick={handlePickRegion}>
-                    {picking ? 'Picking…' : 'Select Region on Screen'}
+                    {picking ? t('ruleEditor.picking') : t('ruleEditor.selectRegion')}
                   </button>
                   {previewImage && (
-                    <img className="capture-preview" src={`data:image/png;base64,${previewImage}`} alt="Captured target" />
+                    <img className="capture-preview" src={`data:image/png;base64,${previewImage}`} alt={t('ruleEditor.capturedTargetAlt')} />
                   )}
                   <label className="field">
-                    <span>Match threshold: {threshold.toFixed(2)}</span>
+                    <span>{t('ruleEditor.matchThreshold', { value: threshold.toFixed(2) })}</span>
                     <input
                       type="range"
                       min={0.5}
@@ -227,18 +229,18 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
               ) : (
                 <>
                   <button type="button" className="button" disabled={!hasPickerBridge || picking} onClick={handlePickPoint}>
-                    {picking ? 'Picking…' : 'Pick a Point on Screen'}
+                    {picking ? t('ruleEditor.picking') : t('ruleEditor.pickPoint')}
                   </button>
                   {targetRgb && (
                     <div className="pixel-preview">
                       <span className="pixel-preview__swatch" style={{ background: `rgb(${targetRgb.join(',')})` }} />
                       <span>
-                        rgb({targetRgb.join(', ')}) at ({pixelPoint?.x}, {pixelPoint?.y})
+                        {t('ruleEditor.pixelSwatchAt', { rgb: targetRgb.join(', '), x: pixelPoint?.x ?? '', y: pixelPoint?.y ?? '' })}
                       </span>
                     </div>
                   )}
                   <label className="field">
-                    <span>Colour tolerance: {tolerance}</span>
+                    <span>{t('ruleEditor.colourTolerance', { value: tolerance })}</span>
                     <input
                       type="range"
                       min={0}
@@ -254,15 +256,17 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
               {step1Complete && (
                 <div className="test-match">
                   <button type="button" className="button button--ghost" disabled={previewing} onClick={handleTestMatch}>
-                    {previewing ? 'Testing…' : 'Test Match'}
+                    {previewing ? t('ruleEditor.testing') : t('ruleEditor.testMatch')}
                   </button>
                   {previewResult && (
                     <span className={previewResult.matched ? 'test-match__result test-match__result--hit' : 'test-match__result'}>
                       {previewResult.matched
-                        ? `Matched at (${previewResult.x}, ${previewResult.y})${
-                            previewResult.confidence != null ? ` — ${(previewResult.confidence * 100).toFixed(1)}%` : ''
+                        ? `${t('ruleEditor.matchedAt', { x: previewResult.x ?? '', y: previewResult.y ?? '' })}${
+                            previewResult.confidence != null
+                              ? t('ruleEditor.confidenceSuffix', { value: (previewResult.confidence * 100).toFixed(1) })
+                              : ''
                           }`
-                        : 'No match found right now'}
+                        : t('ruleEditor.noMatch')}
                     </span>
                   )}
                 </div>
@@ -273,37 +277,37 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
           {step === 1 && (
             <div className="form-stack">
               <label className="field">
-                <span>Action</span>
+                <span>{t('ruleEditor.actionLabel')}</span>
                 <select value={actionKind} onChange={(e) => setActionKind(e.target.value as ActionKind)}>
-                  <option value="click">Click</option>
-                  <option value="double_click">Double-click</option>
-                  <option value="key">Press key</option>
-                  <option value="type">Type text</option>
-                  <option value="macro">Macro (multi-step)</option>
+                  <option value="click">{t('ruleEditor.actionClick')}</option>
+                  <option value="double_click">{t('ruleEditor.actionDoubleClick')}</option>
+                  <option value="key">{t('ruleEditor.actionKey')}</option>
+                  <option value="type">{t('ruleEditor.actionType')}</option>
+                  <option value="macro">{t('ruleEditor.actionMacro')}</option>
                 </select>
               </label>
 
               {(actionKind === 'click' || actionKind === 'double_click') && (
                 <label className="field">
-                  <span>Mouse button</span>
+                  <span>{t('ruleEditor.mouseButton')}</span>
                   <select value={button} onChange={(e) => setButton(e.target.value)}>
-                    <option value="left">Left</option>
-                    <option value="right">Right</option>
-                    <option value="middle">Middle</option>
+                    <option value="left">{t('ruleEditor.buttonLeft')}</option>
+                    <option value="right">{t('ruleEditor.buttonRight')}</option>
+                    <option value="middle">{t('ruleEditor.buttonMiddle')}</option>
                   </select>
                 </label>
               )}
 
               {actionKind === 'key' && (
                 <label className="field">
-                  <span>Key (e.g. "enter", "esc")</span>
+                  <span>{t('ruleEditor.keyLabel')}</span>
                   <input type="text" value={key} onChange={(e) => setKey(e.target.value)} />
                 </label>
               )}
 
               {actionKind === 'type' && (
                 <label className="field">
-                  <span>Text to type</span>
+                  <span>{t('ruleEditor.textToType')}</span>
                   <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} />
                 </label>
               )}
@@ -317,16 +321,21 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
           {step === 2 && (
             <div className="form-stack">
               <label className="field">
-                <span>Rule name</span>
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Click confirm button" />
-                {name.trim() && !nameIsValid && <span className="field__error">A rule with this name already exists.</span>}
+                <span>{t('ruleEditor.ruleName')}</span>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={t('ruleEditor.ruleNamePlaceholder')}
+                />
+                {name.trim() && !nameIsValid && <span className="field__error">{t('ruleEditor.duplicateNameError')}</span>}
               </label>
               <label className="field">
-                <span>Cooldown (ms)</span>
+                <span>{t('ruleEditor.cooldown')}</span>
                 <input type="number" min={0} value={cooldownMs} onChange={(e) => setCooldownMs(Number(e.target.value))} />
               </label>
               <label className="field">
-                <span>Max triggers (optional)</span>
+                <span>{t('ruleEditor.maxTriggers')}</span>
                 <input
                   type="number"
                   min={1}
@@ -336,7 +345,7 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
               </label>
               <label className="field field--checkbox">
                 <input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} />
-                <span>Dry run (log matches, don't actually click/type yet)</span>
+                <span>{t('ruleEditor.dryRunLabel')}</span>
               </label>
             </div>
           )}
@@ -344,22 +353,22 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
 
         <div className="modal__footer">
           <button type="button" className="button button--ghost" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </button>
           <div className="modal__footer-spacer" />
           {step > 0 && (
             <button type="button" className="button" onClick={() => setStep(step - 1)}>
-              Back
+              {t('common.back')}
             </button>
           )}
-          {step < STEPS.length - 1 && (
+          {step < STEP_KEYS.length - 1 && (
             <button type="button" className="button button--primary" disabled={step === 0 && !step1Complete} onClick={() => setStep(step + 1)}>
-              Next
+              {t('common.next')}
             </button>
           )}
-          {step === STEPS.length - 1 && (
+          {step === STEP_KEYS.length - 1 && (
             <button type="button" className="button button--primary" disabled={!canSave} onClick={handleSave}>
-              Save Rule
+              {t('ruleEditor.saveRule')}
             </button>
           )}
         </div>

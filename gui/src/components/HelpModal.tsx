@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useLanguage } from '../i18n/LanguageContext'
 import { PrivacyPolicyContent } from '../content/privacyPolicy'
 import { TermsOfServiceContent } from '../content/termsOfService'
 import { UserManualContent } from '../content/userManual'
@@ -17,31 +18,15 @@ const TAB_LABELS: Record<Tab, Record<Lang, string>> = {
 }
 
 export function HelpModal({ onClose }: Props) {
+  const { lang, t } = useLanguage()
   const [tab, setTab] = useState<Tab>('manual')
-  const [lang, setLang] = useState<Lang>('zh')
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal modal--help" onClick={(e) => e.stopPropagation()}>
         <div className="modal__header">
           <div className="help-header-row">
-            <h2>{lang === 'zh' ? '說明' : 'Help'}</h2>
-            <div className="segmented help-lang-toggle">
-              <button
-                type="button"
-                className={lang === 'zh' ? 'segmented__option segmented__option--active' : 'segmented__option'}
-                onClick={() => setLang('zh')}
-              >
-                繁體中文
-              </button>
-              <button
-                type="button"
-                className={lang === 'en' ? 'segmented__option segmented__option--active' : 'segmented__option'}
-                onClick={() => setLang('en')}
-              >
-                English
-              </button>
-            </div>
+            <h2>{t('statusBar.help')}</h2>
           </div>
           <div className="help-tabs">
             {(Object.keys(TAB_LABELS) as Tab[]).map((key) => (
@@ -66,7 +51,7 @@ export function HelpModal({ onClose }: Props) {
         <div className="modal__footer">
           <div className="modal__footer-spacer" />
           <button type="button" className="button button--primary" onClick={onClose}>
-            {lang === 'zh' ? '關閉' : 'Close'}
+            {t('common.close')}
           </button>
         </div>
       </div>

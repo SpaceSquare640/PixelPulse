@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/LanguageContext'
 import type { EngineStatus } from '../useEngineSocket'
 
 interface Props {
@@ -8,14 +9,16 @@ interface Props {
 }
 
 export function EngineControls({ connected, status, onStart, onStop }: Props) {
+  const { t } = useLanguage()
+
   return (
     <section className="panel engine-controls">
       <div>
         <div className={`engine-state engine-state--${status.running ? 'running' : 'stopped'}`}>
           <span className="dot" />
-          {status.running ? 'Running' : 'Stopped'}
+          {status.running ? t('engineControls.running') : t('engineControls.stopped')}
         </div>
-        <p className="muted">{status.ruleCount} rule(s) loaded</p>
+        <p className="muted">{t('engineControls.ruleCountLoaded', { count: status.ruleCount })}</p>
       </div>
       <button
         type="button"
@@ -23,7 +26,7 @@ export function EngineControls({ connected, status, onStart, onStop }: Props) {
         disabled={!connected}
         onClick={status.running ? onStop : onStart}
       >
-        {status.running ? 'Stop' : 'Start'}
+        {status.running ? t('engineControls.stop') : t('engineControls.start')}
       </button>
     </section>
   )

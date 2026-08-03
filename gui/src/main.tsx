@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { PickerOverlay } from './components/PickerOverlay'
+import { LanguageProvider } from './i18n/LanguageContext'
 
 const params = new URLSearchParams(window.location.search)
 const pickerMode = params.get('picker')
@@ -17,4 +18,8 @@ function renderRoot() {
   return <App />
 }
 
-createRoot(document.getElementById('root')!).render(<StrictMode>{renderRoot()}</StrictMode>)
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <LanguageProvider>{renderRoot()}</LanguageProvider>
+  </StrictMode>,
+)

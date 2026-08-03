@@ -1,0 +1,118 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "back": "Back",
+    "next": "Next",
+    "delete": "Delete",
+    "close": "Close"
+  },
+  "statusBar": {
+    "connected": "Connected",
+    "connecting": "Connecting…",
+    "disconnected": "Disconnected",
+    "help": "Help"
+  },
+  "engineControls": {
+    "running": "Running",
+    "stopped": "Stopped",
+    "ruleCountLoaded": "{count} rule(s) loaded",
+    "start": "Start",
+    "stop": "Stop"
+  },
+  "ruleList": {
+    "title": "Rules",
+    "newRule": "New Rule",
+    "empty": "No rules yet. Click \"New Rule\" to create one.",
+    "dragToReorder": "Drag to reorder",
+    "badgeDryRun": "dry-run"
+  },
+  "triggerKind": {
+    "template": "template",
+    "pixel": "pixel"
+  },
+  "actionKind": {
+    "click": "click",
+    "double_click": "double-click",
+    "key": "key",
+    "type": "type",
+    "macro": "macro",
+    "wait_for": "wait for image"
+  },
+  "ruleEditor": {
+    "title": "New Rule",
+    "stepTrigger": "Trigger",
+    "stepAction": "Action",
+    "stepSafety": "Safety",
+    "pickerBridgeNotice": "Region/point picking needs the desktop app (not available in a plain browser tab).",
+    "triggerTypeLabel": "Trigger type",
+    "triggerTemplate": "Image (template)",
+    "triggerPixel": "Pixel colour",
+    "selectRegion": "Select Region on Screen",
+    "picking": "Picking…",
+    "pickPoint": "Pick a Point on Screen",
+    "capturedTargetAlt": "Captured target",
+    "matchThreshold": "Match threshold: {value}",
+    "colourTolerance": "Colour tolerance: {value}",
+    "pixelSwatchAt": "rgb({rgb}) at ({x}, {y})",
+    "testMatch": "Test Match",
+    "testing": "Testing…",
+    "matchedAt": "Matched at ({x}, {y})",
+    "confidenceSuffix": " — {value}%",
+    "noMatch": "No match found right now",
+    "actionLabel": "Action",
+    "actionClick": "Click",
+    "actionDoubleClick": "Double-click",
+    "actionKey": "Press key",
+    "actionType": "Type text",
+    "actionMacro": "Macro (multi-step)",
+    "mouseButton": "Mouse button",
+    "buttonLeft": "Left",
+    "buttonRight": "Right",
+    "buttonMiddle": "Middle",
+    "keyLabel": "Key (e.g. \"enter\", \"esc\")",
+    "textToType": "Text to type",
+    "ruleName": "Rule name",
+    "ruleNamePlaceholder": "e.g. Click confirm button",
+    "duplicateNameError": "A rule with this name already exists.",
+    "cooldown": "Cooldown (ms)",
+    "maxTriggers": "Max triggers (optional)",
+    "dryRunLabel": "Dry run (log matches, don't actually click/type yet)",
+    "saveRule": "Save Rule"
+  },
+  "macroEditor": {
+    "pickerBridgeNotice": "Target picking needs the desktop app (not available in a plain browser tab).",
+    "noSteps": "No steps yet. Add one below.",
+    "selectRegion": "Select Region on Screen",
+    "picking": "Picking…",
+    "rePickTarget": "Re-pick target",
+    "keyLabel": "Key (e.g. \"enter\", \"esc\")",
+    "textToType": "Text to type",
+    "delayBefore": "Delay before (ms)",
+    "timeout": "Timeout (ms)",
+    "retries": "Retries",
+    "addStep": "+ Add Step"
+  },
+  "logPanel": {
+    "title": "Activity",
+    "empty": "No activity yet.",
+    "engineStarted": "Engine started",
+    "engineStartedWithMessage": "Engine started ({message})",
+    "engineStopped": "Engine stopped",
+    "ruleMatched": "\"{name}\" matched",
+    "ruleDryRun": "\"{name}\" would have triggered (dry-run, no action taken)",
+    "ruleTriggered": "\"{name}\" triggered",
+    "ruleError": "\"{name}\" failed: {message} (rule disabled for this run)",
+    "unknownError": "unknown error",
+    "atCoords": " at ({x}, {y})",
+    "confidenceSuffix": " — {value}%"
+  },
+  "picker": {
+    "clickToPickColour": "Click a point to pick its colour — Esc to cancel",
+    "dragToSelectRegion": "Drag to select a region — Esc to cancel"
+  },
+  "socket": {
+    "notConnected": "Not connected to the PixelPulse server.",
+    "requestInProgress": "Another request is already in progress.",
+    "requestTimedOut": "Request timed out."
+  }
+}
