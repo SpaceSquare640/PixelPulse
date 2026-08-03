@@ -78,6 +78,11 @@ function En() {
         <li>Click <strong>Edit</strong> to open the same 3-step editor pre-filled with the rule's current settings — change anything and save to update it in place.</li>
         <li>Drag a rule card by its handle (⠿) to reorder the list — rules are scanned in list order.</li>
         <li>Click <strong>Delete</strong> to remove a single rule immediately, or <strong>Delete All</strong> to clear every rule at once (this one asks for confirmation first, since it's harder to walk back). Neither can be undone from the app.</li>
+        <li>
+          <strong>Batch Upload</strong> — pick several image files at once to create one rule per image in a single
+          step (template trigger, whole-screen scan, click action, dry-run). Each starts out named with a plain
+          number ("1", "2", ...); rename any of them afterward with <strong>Edit</strong>.
+        </li>
       </ul>
 
       <h3>Safety features</h3>
@@ -187,6 +192,11 @@ function Zh() {
         <li>點擊 <strong>編輯</strong> 會開啟跟新增規則一樣的三步驟編輯器，並預先帶入這條規則目前的設定 —— 改完存檔就會原地更新。</li>
         <li>拖曳規則卡片左側的把手（⠿）可以調整順序 —— 規則會依照清單順序依序掃描。</li>
         <li>點擊 <strong>刪除</strong> 會立即永久刪除單一規則；點擊 <strong>刪除全部</strong> 會一次清空所有規則（這個會先跳出確認，因為影響範圍較大、比較難挽回）。兩者在應用程式裡都無法復原。</li>
+        <li>
+          <strong>批量上傳</strong> —— 一次選取好幾張圖片檔案，一步就能為每張圖片各自建立一條規則（樣板觸發、
+          全螢幕掃描、點擊動作、dry-run）。每條規則預設用單純的數字命名（「1」、「2」...）；之後隨時可以用
+          <strong>編輯</strong> 幫任何一條改名。
+        </li>
       </ul>
 
       <h3>安全機制</h3>

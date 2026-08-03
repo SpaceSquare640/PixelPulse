@@ -11,6 +11,8 @@ interface Props {
   onDeleteAll: () => void
   onReorder: (names: string[]) => void
   onNewRule: () => void
+  onBatchUpload: () => void
+  batchUploading: boolean
 }
 
 function thumbnailFor(rule: RuleConfig) {
@@ -29,9 +31,20 @@ function thumbnailFor(rule: RuleConfig) {
   return <span className="rule-card__thumb rule-card__thumb--empty" />
 }
 
-export function RuleList({ rules, onToggle, onEdit, onDelete, onDeleteAll, onReorder, onNewRule }: Props) {
+export function RuleList({
+  rules,
+  onToggle,
+  onEdit,
+  onDelete,
+  onDeleteAll,
+  onReorder,
+  onNewRule,
+  onBatchUpload,
+  batchUploading,
+}: Props) {
   const [dragName, setDragName] = useState<string | null>(null)
   const { t } = useLanguage()
+  const hasPickerBridge = typeof window !== 'undefined' && !!window.pixelpulse
 
   function handleDrop(targetName: string) {
     if (!dragName || dragName === targetName) return
@@ -61,6 +74,14 @@ export function RuleList({ rules, onToggle, onEdit, onDelete, onDeleteAll, onReo
               {t('ruleList.deleteAll')}
             </button>
           )}
+          <button
+            type="button"
+            className="button"
+            disabled={!hasPickerBridge || batchUploading}
+            onClick={onBatchUpload}
+          >
+            {batchUploading ? t('ruleList.batchUploading') : t('ruleList.batchUpload')}
+          </button>
           <button type="button" className="button button--primary" onClick={onNewRule}>
             {t('ruleList.newRule')}
           </button>

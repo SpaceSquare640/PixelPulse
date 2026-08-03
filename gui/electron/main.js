@@ -240,6 +240,24 @@ ipcMain.handle("dialog:pick-image-file", async () => {
   return result.filePaths[0];
 });
 
+// Same as above but lets the user select several images at once -- for
+// quickly turning a folder of reference images into one rule per image
+// (see RuleList.tsx's "Batch Upload" button), rather than repeating the
+// single-file picker one rule at a time.
+//
+// 跟上面一樣，但可以一次選取好幾張圖片 —— 讓使用者能快速把一整批參考圖片
+// 轉成一條條規則（見 RuleList.tsx 的「批量上傳」按鈕），不用一次一條規則
+// 重複跑單檔選取流程。
+ipcMain.handle("dialog:pick-image-files", async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: "Select images",
+    properties: ["openFile", "multiSelections"],
+    filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "bmp", "webp"] }],
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  return result.filePaths;
+});
+
 // Lets the renderer show the running app's own version (Settings page) --
 // reads from package.json (dev) or the packaged app's metadata, same value
 // electron-builder stamps into the installer.

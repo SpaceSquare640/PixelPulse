@@ -106,6 +106,14 @@ with that rule's current settings — save to update it in place instead of
 creating a duplicate. **Delete All** in the rule list header clears every
 rule at once (with a confirmation prompt first).
 
+**Batch Upload** turns a folder of reference images into one rule per image
+in one go: pick several image files at once and each gets its own rule
+(template trigger, whole-screen scan, click action, dry-run), named with a
+plain sequential number ("1", "2", ...) that continues after whatever
+numbers are already in use so it never collides with existing rules. Rename
+any of them afterward with **Edit** — the numbers are just a starting point,
+not meant to stick.
+
 The **Help** button on the Settings page opens the in-app **Help** panel —
 a user manual, user notice, terms of service, disclaimer, and privacy
 policy, each available in English and 繁體中文 via the language switcher
