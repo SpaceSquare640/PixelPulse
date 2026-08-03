@@ -1,4 +1,4 @@
-# PixelPulse — 核心引擎 + GUI（Phase 5）
+# PixelPulse — 核心引擎 + GUI（Phase 6）
 
 English version: [README.md](README.md)
 
@@ -6,12 +6,24 @@ English version: [README.md](README.md)
 ——現在也支援多步驟巨集，並可用執行緒池平行掃描多條規則。現在有兩種執行方式：
 
 - **命令列**（Phase 1，仍可獨立使用）：直接用 `rules.json` 檔案驅動引擎，不需要 GUI。
-- **GUI**（Phase 2-4）：Electron + React 前端透過本機 WebSocket 跟同一個引擎溝通 ——
+- **GUI**（Phase 2-6）：Electron + React 前端透過本機 WebSocket 跟同一個引擎溝通 ——
   連線/引擎狀態、附螢幕框選工具與即時比對預覽的規則編輯器、巨集步驟編輯器、可拖曳
-  排序且有縮圖的規則清單，以及即時活動紀錄。
+  排序且有縮圖的規則清單，以及即時活動紀錄。現在打包成單一 Windows 安裝檔，
+  Python 引擎已經內建在裡面 —— 不需要另外安裝 Python。
 
-完整架構與開發時程請見 `PixelPulse_Document/` 裡的專案規劃（Phase 6 以後會加入
-打包發布）。
+完整架構與開發時程請見 `PixelPulse_Document/` 裡的專案規劃。
+
+## 取得應用程式（Windows 安裝檔）
+
+到 [Releases](https://github.com/SpaceSquare640/PixelPulse/releases) 下載最新的
+`PixelPulse-Setup-vX.Y.Z-windows.exe`，執行安裝程式，然後從開始功能表啟動
+**PixelPulse**。安裝檔把 Python 引擎（`PixelPulse-Server.exe`，用 PyInstaller
+打包）跟 Electron GUI 一起打包 —— App 啟動時會自動在背景啟動自己的引擎，
+透過 `127.0.0.1:8765` 連線，跟下面手動開發的做法原理相同。規則與擷取到的樣板
+圖片會存放在每個使用者各自的 `%APPDATA%\PixelPulse\` 資料夾裡。不需要系統管理員
+權限，也不需要另外安裝 Python。
+
+以下章節是給想從原始碼執行的人看的（開發用途，或只想用命令列、不需要 GUI）。
 
 ## 環境建置（Python 核心）
 
@@ -92,6 +104,26 @@ wait for image）另外有逾時時間與重試次數 —— 重試完還是找�
 可以直接編輯 `rules.json` 把該步驟的 `"onTimeout"` 設成 `"skip"`（編輯器介面目前
 還沒有提供這個開關）。
 
+## 自己建置 Windows 安裝檔
+
+CI 在每次發佈時都會自動做這件事（見 `.github/workflows/release.yml`），
+但要在本機重現的話：
+
+```bash
+pip install pyinstaller
+pyinstaller --onefile --name PixelPulse-Server core/server/__main__.py
+cd gui
+npm ci
+npm run electron:build
+```
+
+`electron:build`（`vite build && electron-builder`）會透過 `gui/package.json`
+裡的 `extraResources` 設定，把 `dist/PixelPulse-Server.exe` 一起打包進去，
+產生 `gui/dist/PixelPulse Setup <version>.exe`——一個把伺服器 exe 內建在
+App `resources/` 資料夾裡的 NSIS 安裝檔。這個安裝檔沒有數位簽章（沒有憑證），
+所以第一次執行時 Windows SmartScreen 可能會跳出警告；這是未簽章開源軟體的
+正常現象，不代表檔案被竄改過。
+
 ## 效能：平行掃描
 
 `cv2.matchTemplate`（本身已是原生 OpenCV 程式碼）主宰了掃描的耗時，而且它執行運算
@@ -139,7 +171,8 @@ benchmarks/         # Phase 5「先量測再優化」決策背後的效能測試
 
 gui/
 ├─ electron/
-│  ├─ main.js        # 視窗、系統匣、框選/點選工具視窗
+│  ├─ main.js        # 視窗、系統匣、框選/點選工具視窗，以及（打包後的正式版）
+│  │                  # 自動啟動內建伺服器 exe
 │  └─ preload.cjs     # contextBridge -> window.pixelpulse.{pickRegion,pickPoint}
 └─ src/
    ├─ components/

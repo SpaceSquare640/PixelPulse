@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "description": "PixelPulse Electron + React GUI shell",
+  "author": "PixelPulse Contributors",
   "license": "MIT",
   "type": "module",
   "main": "electron/main.js",
@@ -21,9 +22,19 @@
       "dist/**/*",
       "electron/**/*"
     ],
+    "extraResources": [
+      {
+        "from": "../dist/PixelPulse-Server.exe",
+        "to": "PixelPulse-Server.exe"
+      }
+    ],
     "win": {
       "target": "nsis",
       "icon": "electron/assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
     }
   },
   "dependencies": {

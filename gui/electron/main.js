@@ -14,11 +14,26 @@
 // 一塊區域，或點選單一像素。
 
 import { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, screen } from "electron";
+import { spawn } from "node:child_process";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PRELOAD_PATH = path.join(__dirname, "preload.cjs");
+
+// package.json's top-level "name" is "gui" (the npm workspace's internal
+// name) -- without this, app.getName() falls back to that and every
+// per-user data path (app.getPath("userData"), the crash-dump folder, etc.)
+// would live under a confusing "%APPDATA%\gui" instead of "...\PixelPulse".
+// Must be set before any app.getPath() call, so it runs at module load time.
+//
+// package.json 最上層的 "name" 是 "gui"（npm workspace 內部用的名稱）——
+// 沒有這行，app.getName() 就會退回用那個名稱，導致每個使用者專屬的資料路徑
+// （app.getPath("userData")、當機傾印資料夾等）都會變成令人困惑的
+// "%APPDATA%\gui"，而不是「...\PixelPulse」。必須在任何 app.getPath()
+// 呼叫之前設定，所以放在模組載入時就執行。
+app.setName("PixelPulse");
 
 let mainWindow = null;
 let tray = null;
@@ -26,6 +41,59 @@ let isQuitting = false;
 
 let pickerWindow = null;
 let pendingPickerResolve = null;
+
+let serverProcess = null;
+
+// In dev (`npm run dev`), the Python server is started by hand in a separate
+// terminal, same as the CLI-only workflow -- this only kicks in for a
+// packaged build, where there's no terminal for the user to run it from.
+// The bundled PixelPulse-Server.exe (built by PyInstaller, see
+// .github/workflows/release.yml and gui/package.json's `build.extraResources`)
+// ships in the installed app's resources/ folder next to the renderer.
+//
+// 開發模式（`npm run dev`）下，Python 伺服器是手動在另一個終端機啟動的，跟
+// 純 CLI 的工作流程一樣 -- 這段程式碼只在打包後的正式版才會用到，因為使用者
+// 沒有終端機可以手動啟動伺服器。打包好的 PixelPulse-Server.exe（由 PyInstaller
+// 建置，見 .github/workflows/release.yml 與 gui/package.json 的
+// `build.extraResources`）會放在安裝後 App 的 resources/ 資料夾裡，
+// 跟前端檔案放在一起。
+function startBundledServer() {
+  if (!app.isPackaged) return;
+
+  const exePath = path.join(process.resourcesPath, "PixelPulse-Server.exe");
+  if (!fs.existsSync(exePath)) {
+    console.error(`Bundled server not found at ${exePath}`);
+    return;
+  }
+
+  // Rules/targets live in the per-user app-data folder, not next to the exe
+  // (which sits under Program Files and isn't writable without admin rights).
+  // 規則與樣板圖片放在每個使用者各自的 app-data 資料夾，而不是跟 exe 放在一起
+  // （exe 在 Program Files 底下，一般使用者沒有系統管理員權限無法寫入）。
+  const userDataDir = app.getPath("userData");
+  const rulesPath = path.join(userDataDir, "rules.json");
+  const targetsDir = path.join(userDataDir, "targets");
+  fs.mkdirSync(targetsDir, { recursive: true });
+
+  serverProcess = spawn(
+    exePath,
+    ["--rules-path", rulesPath, "--targets-dir", targetsDir, "--host", "127.0.0.1", "--port", "8765"],
+    { windowsHide: true },
+  );
+  serverProcess.stdout?.on("data", (data) => console.log(`[server] ${data}`.trimEnd()));
+  serverProcess.stderr?.on("data", (data) => console.error(`[server] ${data}`.trimEnd()));
+  serverProcess.on("exit", (code, signal) => {
+    console.log(`PixelPulse server exited (code=${code}, signal=${signal})`);
+    serverProcess = null;
+  });
+}
+
+function stopBundledServer() {
+  if (serverProcess && serverProcess.exitCode === null) {
+    serverProcess.kill();
+  }
+  serverProcess = null;
+}
 
 function loadRenderer(window, queryString = "") {
   const devServerUrl = process.env.VITE_DEV_SERVER_URL;
@@ -156,12 +224,14 @@ ipcMain.on("picker:result", (_event, result) => {
 });
 
 app.whenReady().then(() => {
+  startBundledServer();
   createWindow();
   createTray();
 });
 
 app.on("before-quit", () => {
   isQuitting = true;
+  stopBundledServer();
 });
 
 app.on("window-all-closed", () => {

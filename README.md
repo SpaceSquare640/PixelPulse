@@ -1,4 +1,4 @@
-# PixelPulse — Core Engine + GUI (Phase 5)
+# PixelPulse — Core Engine + GUI (Phase 6)
 
 繁體中文版：[README.zh-TW.md](README.zh-TW.md)
 
@@ -8,14 +8,30 @@ finds a hit. Two ways to run it:
 
 - **CLI** (Phase 1, still works standalone): drive the engine straight from
   a `rules.json` file, no GUI required.
-- **GUI** (Phase 2-4): an Electron + React front end talks to the same
+- **GUI** (Phase 2-6): an Electron + React front end talks to the same
   engine over a local WebSocket — connection/engine status, a rule editor
   with an on-screen region/point picker, live match preview, a macro step
   editor, a drag-to-reorder rule list with thumbnails, and a live activity
-  log.
+  log. Ships as a single Windows installer with the Python engine bundled
+  inside — no separate Python setup required.
 
 See the project plan in `PixelPulse_Document/` for the full architecture and
-roadmap (Phase 6+ adds packaging).
+roadmap.
+
+## Get the app (Windows installer)
+
+Download the latest `PixelPulse-Setup-vX.Y.Z-windows.exe` from
+[Releases](https://github.com/SpaceSquare640/PixelPulse/releases), run it,
+and launch **PixelPulse** from the Start Menu. The installer bundles the
+Python engine (`PixelPulse-Server.exe`, built with PyInstaller) alongside the
+Electron GUI — the app starts its own engine automatically in the
+background on launch, connecting over `127.0.0.1:8765` the same way the dev
+setup below does manually. Rules and captured template images are stored
+per-user under `%APPDATA%\PixelPulse\`. No admin rights or separate Python
+install needed.
+
+The sections below are for running from source (development, or the
+CLI-only workflow without the GUI).
 
 ## Setup (Python core)
 
@@ -107,6 +123,27 @@ reports a `rule_error` you'll see in the activity log; this can be changed
 to skip that step instead by editing `"onTimeout": "skip"` directly in
 `rules.json` (not yet exposed as a toggle in the editor UI).
 
+## Building the Windows installer yourself
+
+CI does this automatically for every release (see
+`.github/workflows/release.yml`), but to reproduce it locally:
+
+```bash
+pip install pyinstaller
+pyinstaller --onefile --name PixelPulse-Server core/server/__main__.py
+cd gui
+npm ci
+npm run electron:build
+```
+
+`electron:build` (`vite build && electron-builder`) picks up
+`dist/PixelPulse-Server.exe` via the `extraResources` entry in
+`gui/package.json` and produces `gui/dist/PixelPulse Setup <version>.exe` —
+an NSIS installer with the server exe bundled into the app's `resources/`
+folder. The installer isn't code-signed (no certificate), so Windows
+SmartScreen may warn on first run; that's expected for an unsigned
+open-source build, not a sign of tampering.
+
 ## Performance: parallel scanning
 
 `cv2.matchTemplate` (already native OpenCV code) dominates scan cost, and it
@@ -158,7 +195,8 @@ benchmarks/        # perf scripts backing the Phase 5 "measure before
 
 gui/
 ├─ electron/
-│  ├─ main.js       # window, tray, and the region/point picker window
+│  ├─ main.js       # window, tray, region/point picker window, and (in a
+│  │                 # packaged build) spawning the bundled server exe
 │  └─ preload.cjs    # contextBridge -> window.pixelpulse.{pickRegion,pickPoint}
 └─ src/
    ├─ components/

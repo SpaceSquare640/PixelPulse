@@ -31,7 +31,7 @@ jobs:
       - name: Build standalone CLI executable
         run: pyinstaller --onefile --name PixelPulse-Core core/run.py
 
-      - name: Assemble release bundle
+      - name: Assemble CLI release bundle
         shell: pwsh
         run: |
           $bundle = "PixelPulse-Core-${{ github.event.release.tag_name }}-windows"
@@ -42,7 +42,43 @@ jobs:
           Copy-Item README.md, README.zh-TW.md $bundle/
           Compress-Archive -Path $bundle -DestinationPath "$bundle.zip"
 
-      - name: Upload release asset
+      - name: Build standalone server executable (for the GUI app)
+        run: pyinstaller --onefile --name PixelPulse-Server core/server/__main__.py
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: gui/package-lock.json
+
+      - name: Install GUI dependencies
+        working-directory: gui
+        run: npm ci
+
+      - name: Sync GUI version to the release tag
+        # gui/package.json's version is an internal dev placeholder (it isn't
+        # bumped on every release, same as it's been since Phase 2) -- this
+        # only affects electron-builder's installer metadata/filename for
+        # *this* build, not the committed file.
+        shell: pwsh
+        working-directory: gui
+        run: |
+          $version = "${{ github.event.release.tag_name }}" -replace '^v', ''
+          npm version $version --no-git-tag-version --allow-same-version
+
+      - name: Build the Windows installer (Electron GUI + bundled server)
+        working-directory: gui
+        run: npm run electron:build
+
+      - name: Rename installer to include the release tag
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem "gui/dist/*.exe" | Where-Object { $_.Name -notlike "*uninstaller*" } | Select-Object -First 1
+          Rename-Item $installer.FullName "PixelPulse-Setup-${{ github.event.release.tag_name }}-windows.exe"
+
+      - name: Upload release assets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload ${{ github.event.release.tag_name }} "PixelPulse-Core-${{ github.event.release.tag_name }}-windows.zip"
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} "PixelPulse-Core-${{ github.event.release.tag_name }}-windows.zip"
+          gh release upload ${{ github.event.release.tag_name }} "gui/dist/PixelPulse-Setup-${{ github.event.release.tag_name }}-windows.exe"
