@@ -386,3 +386,39 @@ def test_once_per_appearance_fires_once_then_rearms_on_disappear(tmp_path):
 
     matched = [e for e in events if e.type == "rule_matched" and e.rule_name == "once-rule"]
     assert len(matched) == 2
+
+
+# --- "像素圖" / colour_pattern: rotation-tolerant colour-cluster trigger ----
+
+
+def test_colour_pattern_rule_matches_when_key_colours_cluster_together():
+    roi = (0, 0, 60, 60)
+    frame = np.zeros((60, 60, 3), dtype=np.uint8)
+    # BGR order in the frame -- these correspond to RGB (255, 0, 0) and (0, 255, 0).
+    frame[30, 28] = (0, 0, 255)
+    frame[30, 32] = (0, 255, 0)
+
+    capture = _RoiCapture({roi: frame})
+
+    rule = RuleConfig.model_validate(
+        {
+            "name": "colour-rule",
+            "trigger": {
+                "kind": "colour_pattern",
+                "roi": list(roi),
+                "colours": [{"rgb": [255, 0, 0]}, {"rgb": [0, 255, 0]}],
+                "tolerance": 5,
+                "minMatches": 2,
+                "clusterRadius": 10,
+            },
+            "action": {"kind": "click"},
+            "cooldownMs": 100_000,
+            "dryRun": True,
+        }
+    )
+
+    events = []
+    engine = RuleEngine(rules=[rule], capture=capture, input_backend=_NoopBackend(), on_event=events.append, scan_interval_s=0.02)
+    _run_briefly(engine)
+
+    assert any(e.type == "rule_matched" and e.rule_name == "colour-rule" for e in events)

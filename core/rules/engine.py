@@ -42,6 +42,7 @@ from core.capture.screen import Region, ScreenCapture
 from core.rules.events import EngineEvent
 from core.rules.macro import MacroExecutor
 from core.rules.models import RuleConfig
+from core.vision.colour_pattern import find_colour_cluster
 from core.vision.match_result import Match
 from core.vision.pixel_match import match_pixel
 from core.vision.template_matching import find_target, load_template
@@ -394,6 +395,17 @@ class RuleEngine:
             if hit:
                 return Match(x=region.left + (trigger.pixel_x or 0), y=region.top + (trigger.pixel_y or 0), confidence=1.0)
             return None
+
+        if trigger.kind == "colour_pattern":
+            colours = [c.rgb for c in (trigger.colours or [])]
+            return find_colour_cluster(
+                frame,
+                region,
+                colours,
+                tolerance=trigger.tolerance,
+                min_matches=trigger.min_matches,
+                cluster_radius=trigger.cluster_radius,
+            )
 
         raise ValueError(f"Unknown trigger kind: {trigger.kind}")
 

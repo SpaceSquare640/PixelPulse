@@ -173,6 +173,37 @@ def test_preview_trigger_pixel_no_match(service):
     assert match is None
 
 
+def test_preview_trigger_colour_pattern_match(service):
+    r, g, b = service.capture_pixel(0, 0)
+    trigger = TriggerConfig(
+        kind="colour_pattern",
+        roi=(0, 0, 10, 10),
+        colours=[{"rgb": (r, g, b)}, {"rgb": (r, g, b)}],
+        tolerance=5,
+        min_matches=2,
+        cluster_radius=10,
+    )
+
+    match = service.preview_trigger(trigger)
+
+    assert match is not None
+
+
+def test_preview_trigger_colour_pattern_no_match(service):
+    trigger = TriggerConfig(
+        kind="colour_pattern",
+        roi=(0, 0, 10, 10),
+        colours=[{"rgb": (1, 2, 3)}, {"rgb": (4, 5, 6)}],  # extremely unlikely combo
+        tolerance=0,
+        min_matches=2,
+        cluster_radius=10,
+    )
+
+    match = service.preview_trigger(trigger)
+
+    assert match is None
+
+
 def test_start_stop_with_no_rules_is_safe(rules_path, tmp_path):
     # No rules means the engine loop never touches the screen or input
     # backend -- safe to actually start/stop in a test.

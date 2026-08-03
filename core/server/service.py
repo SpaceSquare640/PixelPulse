@@ -37,6 +37,7 @@ from core.rules.engine import RuleEngine
 from core.rules.events import EngineEvent
 from core.rules.loader import load_rules, save_rules
 from core.rules.models import RuleConfig, TriggerConfig
+from core.vision.colour_pattern import find_colour_cluster
 from core.vision.match_result import Match
 from core.vision.pixel_match import match_pixel, read_pixel_rgb
 from core.vision.template_matching import find_target, load_template
@@ -248,6 +249,17 @@ class EngineService:
                 y = region.top + (trigger.pixel_y or 0)
                 return Match(x=x, y=y, confidence=1.0)
             return None
+
+        if trigger.kind == "colour_pattern":
+            colours = [c.rgb for c in (trigger.colours or [])]
+            return find_colour_cluster(
+                frame,
+                region,
+                colours,
+                tolerance=trigger.tolerance,
+                min_matches=trigger.min_matches,
+                cluster_radius=trigger.cluster_radius,
+            )
 
         raise ValueError(f"Unknown trigger kind: {trigger.kind}")
 

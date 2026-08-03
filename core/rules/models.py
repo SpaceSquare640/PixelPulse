@@ -20,12 +20,32 @@ from pydantic import BaseModel, ConfigDict, Field
 RoiTuple = tuple[int, int, int, int]  # (left, top, width, height) / 左、上、寬、高
 
 
-class TriggerConfig(BaseModel):
-    """觸發條件設定：可以是樣板匹配 (template) 或像素比對 (pixel)。"""
+class ColourPoint(BaseModel):
+    """One key colour in a `colour_pattern` trigger's colour set.
+
+    `offsetX`/`offsetY` only describe the rough size of the original capture
+    (used to size the default cluster search radius) -- they are NOT checked
+    against each other at detection time, since the whole point of this
+    trigger is to tolerate the target rotating.
+
+    「像素圖」觸發條件裡的其中一個關鍵顏色。`offsetX`/`offsetY` 只用來描述原始
+    截圖的大致範圍（決定預設的群聚搜尋半徑），偵測時**不會**拿來互相比較——
+    因為這個觸發條件的重點就是要容忍目標旋轉。
+    """
 
     model_config = ConfigDict(populate_by_name=True)
 
-    kind: Literal["template", "pixel"]
+    rgb: tuple[int, int, int]
+    offset_x: int = Field(default=0, alias="offsetX")
+    offset_y: int = Field(default=0, alias="offsetY")
+
+
+class TriggerConfig(BaseModel):
+    """觸發條件設定：樣板匹配 (template)、像素比對 (pixel) 或像素圖 (colour_pattern)。"""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    kind: Literal["template", "pixel", "colour_pattern"]
     # None means "scan the whole (virtual) screen" instead of a fixed region --
     # slower per scan, but the target can appear anywhere rather than just in
     # a region picked in advance.
@@ -43,6 +63,16 @@ class TriggerConfig(BaseModel):
     pixel_y: int | None = Field(default=None, alias="pixelY")
     target_rgb: tuple[int, int, int] | None = Field(default=None, alias="targetRgb")
     tolerance: int = 10
+
+    # colour_pattern trigger ("像素圖"): a handful of key colours that must
+    # appear clustered together somewhere in the scanned region, regardless
+    # of the target's rotation. See
+    # PixelPulse_Document/03 - 開發管理/17 - 顏色群集觸發（旋轉不變偵測）.md
+    # 「像素圖」觸發：幾個關鍵顏色必須在掃描範圍內的某處群聚出現，不管目標
+    # 旋轉到哪個角度。詳見上述規劃筆記。
+    colours: list[ColourPoint] | None = None
+    min_matches: int = Field(default=2, alias="minMatches")
+    cluster_radius: int = Field(default=15, alias="clusterRadius")
 
 
 class MacroStep(BaseModel):
