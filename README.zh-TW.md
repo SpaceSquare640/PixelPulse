@@ -66,8 +66,16 @@ python -m core.run rules.json
 新規則一律先進入 dry-run，確認沒問題後再到規則清單把開關切成正式執行。拖曳規則卡片
 左側的把手可以調整順序（規則按清單順序依序掃描）。
 
-點擊右上角的 **?** 按鈕，可以開啟應用程式內建的 **說明**面板 —— 教學手冊、使用條款、
-隱私權政策，透過語言切換按鈕都能看繁體中文或英文版本。原始內容在 `gui/src/content/`。
+點擊右上角的 **?** 按鈕，可以開啟應用程式內建的 **說明**面板 —— 教學手冊、使用者須知、
+使用條款、免責聲明、隱私權政策，透過語言切換按鈕都能看繁體中文或英文版本。原始內容在
+`gui/src/content/`。
+
+## 授權、免責聲明與使用者須知
+
+PixelPulse 採用 [MIT 授權](LICENSE)。關鍵風險提醒請見
+[DISCLAIMER.zh-TW.md](DISCLAIMER.zh-TW.md)（自動化辨識不會百分之百準確，把它用在
+禁止自動化的服務上風險自負）；實務使用注意事項請見
+[USER_NOTICE.zh-TW.md](USER_NOTICE.zh-TW.md)——兩者在 App 內的說明面板裡也看得到。
 
 ### 巨集（多步驟動作）
 
@@ -139,9 +147,10 @@ gui/
    │  ├─ MacroStepEditor.tsx  # 「macro」動作用的步驟清單編輯器
    │  ├─ PickerOverlay.tsx   # 顯示在透明框選視窗裡的內容
    │  ├─ RuleList.tsx        # 卡片清單、縮圖、拖曳排序
-   │  ├─ HelpModal.tsx       # 應用程式內的教學手冊/條款/隱私（分頁 + 語言切換）
+   │  ├─ HelpModal.tsx       # 應用程式內的教學手冊/須知/條款/免責聲明/隱私（分頁 + 語言切換）
    │  ├─ EngineControls.tsx / LogPanel.tsx / StatusBar.tsx
-   ├─ content/               # userManual.tsx / termsOfService.tsx / privacyPolicy.tsx（英文 + 繁中）
+   ├─ content/               # userManual.tsx / userNotice.tsx / termsOfService.tsx /
+   │                         # disclaimer.tsx / privacyPolicy.tsx（英文 + 繁中）
    ├─ useEngineSocket.ts     # WebSocket 用戶端 + 請求/回應橋接
    └─ protocol.ts            # 對應 core/server/protocol.py
 ```

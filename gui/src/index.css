@@ -734,6 +734,7 @@ html.picker-mode #root {
 
 .help-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 

@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "description": "PixelPulse Electron + React GUI shell",
+  "license": "MIT",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {

@@ -77,8 +77,17 @@ toggle once you trust it. Drag rule cards by the handle to reorder them
 (rules are scanned in list order).
 
 Click the **?** button in the top-right corner for the in-app **Help**
-panel — a user manual, terms of service, and privacy policy, each available
-in English and 繁體中文 via the language toggle. Source: `gui/src/content/`.
+panel — a user manual, user notice, terms of service, disclaimer, and privacy
+policy, each available in English and 繁體中文 via the language toggle.
+Source: `gui/src/content/`.
+
+## License, disclaimer, and user notice
+
+PixelPulse is [MIT licensed](LICENSE). See [DISCLAIMER.md](DISCLAIMER.md) for
+the key risk points (automation is imprecise, and using it against a
+service that prohibits automation is at your own risk) and
+[USER_NOTICE.md](USER_NOTICE.md) for practical usage notes — both also
+available inside the app's Help panel.
 
 ### Macros (multi-step actions)
 
@@ -157,9 +166,10 @@ gui/
    │  ├─ MacroStepEditor.tsx  # step list editor for the "macro" action
    │  ├─ PickerOverlay.tsx   # renders inside the transparent picker window
    │  ├─ RuleList.tsx        # card list, thumbnails, drag-to-reorder
-   │  ├─ HelpModal.tsx       # in-app manual / terms / privacy (tabs + language toggle)
+   │  ├─ HelpModal.tsx       # in-app manual/notice/terms/disclaimer/privacy (tabs + language toggle)
    │  ├─ EngineControls.tsx / LogPanel.tsx / StatusBar.tsx
-   ├─ content/               # userManual.tsx / termsOfService.tsx / privacyPolicy.tsx (EN + zh-TW)
+   ├─ content/               # userManual.tsx / userNotice.tsx / termsOfService.tsx /
+   │                         # disclaimer.tsx / privacyPolicy.tsx (EN + zh-TW)
    ├─ useEngineSocket.ts     # WebSocket client + request/response bridge
    └─ protocol.ts            # mirrors core/server/protocol.py
 ```

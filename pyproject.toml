@@ -2,6 +2,7 @@
 name = "pixelpulse-core"
 version = "0.1.0"
 description = "PixelPulse core engine: screen capture, vision matching, and input automation"
+license = "MIT"
 requires-python = ">=3.11"
 dependencies = [
     "mss>=9.0.1",
