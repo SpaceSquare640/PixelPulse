@@ -44,7 +44,16 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
   const [triggerKind, setTriggerKind] = useState<'template' | 'pixel'>('template')
   const [imageSource, setImageSource] = useState<'crop' | 'file'>('crop')
   const [roi, setRoi] = useState<[number, number, number, number] | null>(null)
-  const [wholeScreen, setWholeScreen] = useState(false)
+  // Defaults to true: a template match should find its target wherever it
+  // appears, not just inside the exact box it happened to be captured from
+  // -- a fixed region silently stops matching the instant the target moves.
+  // Power users who specifically want a smaller, faster/less-false-positive
+  // scan area can still uncheck this.
+  // 預設為 true：樣板比對應該要能在目標出現的任何地方找到它，而不只是限定
+  // 在當初擷取時剛好框選的那個區域 —— 目標一旦移動位置，固定區域就會立刻
+  // 偵測不到。想要縮小掃描範圍換取速度、減少誤判的進階使用者，仍然可以自己
+  // 取消勾選。
+  const [wholeScreen, setWholeScreen] = useState(true)
   const [image, setImage] = useState<string | null>(null)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [threshold, setThreshold] = useState(0.85)
