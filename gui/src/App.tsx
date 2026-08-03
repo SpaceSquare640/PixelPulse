@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { EngineControls } from './components/EngineControls'
+import { HelpModal } from './components/HelpModal'
 import { LogPanel } from './components/LogPanel'
 import { RuleEditor } from './components/RuleEditor'
 import { RuleList } from './components/RuleList'
@@ -25,10 +26,11 @@ function App() {
   } = useEngineSocket()
 
   const [editorOpen, setEditorOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
 
   return (
     <div className="app">
-      <StatusBar connectionState={connectionState} />
+      <StatusBar connectionState={connectionState} onOpenHelp={() => setHelpOpen(true)} />
       {lastError && <div className="error-banner">{lastError}</div>}
       <main className="app__body">
         <EngineControls
@@ -62,6 +64,8 @@ function App() {
           previewTrigger={previewTrigger}
         />
       )}
+
+      {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
     </div>
   )
 }

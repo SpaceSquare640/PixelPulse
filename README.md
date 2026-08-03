@@ -76,6 +76,10 @@ New rules always start in dry-run — flip the checkbox off in the rule list's
 toggle once you trust it. Drag rule cards by the handle to reorder them
 (rules are scanned in list order).
 
+Click the **?** button in the top-right corner for the in-app **Help**
+panel — a user manual, terms of service, and privacy policy, each available
+in English and 繁體中文 via the language toggle. Source: `gui/src/content/`.
+
 ### Macros (multi-step actions)
 
 Pick "Macro (multi-step)" as the action to chain several steps together
@@ -153,7 +157,9 @@ gui/
    │  ├─ MacroStepEditor.tsx  # step list editor for the "macro" action
    │  ├─ PickerOverlay.tsx   # renders inside the transparent picker window
    │  ├─ RuleList.tsx        # card list, thumbnails, drag-to-reorder
+   │  ├─ HelpModal.tsx       # in-app manual / terms / privacy (tabs + language toggle)
    │  ├─ EngineControls.tsx / LogPanel.tsx / StatusBar.tsx
+   ├─ content/               # userManual.tsx / termsOfService.tsx / privacyPolicy.tsx (EN + zh-TW)
    ├─ useEngineSocket.ts     # WebSocket client + request/response bridge
    └─ protocol.ts            # mirrors core/server/protocol.py
 ```

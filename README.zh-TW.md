@@ -66,6 +66,9 @@ python -m core.run rules.json
 新規則一律先進入 dry-run，確認沒問題後再到規則清單把開關切成正式執行。拖曳規則卡片
 左側的把手可以調整順序（規則按清單順序依序掃描）。
 
+點擊右上角的 **?** 按鈕，可以開啟應用程式內建的 **說明**面板 —— 教學手冊、使用條款、
+隱私權政策，透過語言切換按鈕都能看繁體中文或英文版本。原始內容在 `gui/src/content/`。
+
 ### 巨集（多步驟動作）
 
 動作選「Macro (multi-step)」可以把好幾個步驟串在一起，取代單一動作：
@@ -136,7 +139,9 @@ gui/
    │  ├─ MacroStepEditor.tsx  # 「macro」動作用的步驟清單編輯器
    │  ├─ PickerOverlay.tsx   # 顯示在透明框選視窗裡的內容
    │  ├─ RuleList.tsx        # 卡片清單、縮圖、拖曳排序
+   │  ├─ HelpModal.tsx       # 應用程式內的教學手冊/條款/隱私（分頁 + 語言切換）
    │  ├─ EngineControls.tsx / LogPanel.tsx / StatusBar.tsx
+   ├─ content/               # userManual.tsx / termsOfService.tsx / privacyPolicy.tsx（英文 + 繁中）
    ├─ useEngineSocket.ts     # WebSocket 用戶端 + 請求/回應橋接
    └─ protocol.ts            # 對應 core/server/protocol.py
 ```
