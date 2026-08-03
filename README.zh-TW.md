@@ -66,6 +66,9 @@ python -m core.run rules.json
    `npm run dev` 會同時啟動 Vite 開發伺服器與 Electron。關閉視窗只會縮到系統匣，
    不會真的結束程式 —— 要離開請用系統匣選單裡的「Quit」。
 
+左側的側邊欄可以切換三個頁面：**規則**（規則清單 + 引擎啟動/停止）、
+**活動紀錄**（即時事件紀錄），以及 **設定**（語言、App 版本、說明面板）。
+
 點擊 **New Rule** 開啟規則編輯器：
 
 1. **Trigger（觸發條件）** —— 選「Image (template)」或「Pixel colour」。選圖片
@@ -85,9 +88,13 @@ python -m core.run rules.json
 新規則一律先進入 dry-run，確認沒問題後再到規則清單把開關切成正式執行。拖曳規則卡片
 左側的把手可以調整順序（規則按清單順序依序掃描）。
 
-點擊右上角的 **?** 按鈕，可以開啟應用程式內建的 **說明**面板 —— 教學手冊、使用者須知、
-使用條款、免責聲明、隱私權政策，透過語言切換按鈕都能看繁體中文或英文版本。原始內容在
-`gui/src/content/`。
+點擊規則卡片上的 **編輯** 可以重新開啟同一個三步驟編輯器，並預先帶入這條規則目前的
+設定 —— 存檔會原地更新，不會新增重複的規則。規則清單標題列的 **刪除全部** 可以一次
+清空所有規則（會先跳出確認）。
+
+**設定** 頁面裡的 **說明** 按鈕，可以開啟應用程式內建的 **說明**面板 —— 教學手冊、
+使用者須知、使用條款、免責聲明、隱私權政策，透過設定頁的語言切換（同一頁）都能看
+繁體中文或英文版本。原始內容在 `gui/src/content/`。
 
 ## 授權、免責聲明與使用者須知
 
@@ -187,7 +194,9 @@ gui/
    │  ├─ MacroStepEditor.tsx  # 「macro」動作用的步驟清單編輯器
    │  ├─ PickerOverlay.tsx   # 顯示在透明框選視窗裡的內容
    │  ├─ RuleList.tsx        # 卡片清單、縮圖、拖曳排序
-   │  ├─ HelpModal.tsx       # 應用程式內的教學手冊/須知/條款/免責聲明/隱私（分頁 + 語言切換）
+   │  ├─ Sidebar.tsx         # 左側導覽：規則／活動紀錄／設定
+   │  ├─ SettingsPage.tsx    # 語言切換、App 版本、說明入口
+   │  ├─ HelpModal.tsx       # 應用程式內的教學手冊/須知/條款/免責聲明/隱私（分頁，跟隨全域語言）
    │  ├─ EngineControls.tsx / LogPanel.tsx / StatusBar.tsx
    ├─ content/               # userManual.tsx / userNotice.tsx / termsOfService.tsx /
    │                         # disclaimer.tsx / privacyPolicy.tsx（英文 + 繁中）

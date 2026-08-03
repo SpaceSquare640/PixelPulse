@@ -18,6 +18,7 @@ export interface PixelPulseBridge {
   pickPoint: () => Promise<PointPickResult | null>
   reportPickerResult: (result: RegionPickResult | PointPickResult | null) => void
   pickImageFile: () => Promise<string | null>
+  getAppVersion: () => Promise<string>
 }
 
 declare global {

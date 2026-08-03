@@ -32,9 +32,16 @@ body {
   min-height: 100vh;
 }
 
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
 .app {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
   min-height: 100vh;
 }
 
@@ -45,6 +52,87 @@ body {
   gap: 16px;
   padding: 16px;
   overflow-y: auto;
+}
+
+/* --- sidebar --- */
+
+.sidebar {
+  width: 72px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 16px 0;
+  background: var(--panel-bg);
+  border-right: 1px solid var(--border);
+  -webkit-app-region: drag;
+}
+
+.sidebar__brand {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: #06281c;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.sidebar__nav {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.sidebar__item {
+  -webkit-app-region: no-drag;
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 10.5px;
+}
+
+.sidebar__item svg {
+  width: 20px;
+  height: 20px;
+}
+
+.sidebar__item:hover {
+  color: var(--text);
+}
+
+.sidebar__item--active {
+  color: var(--accent);
+  position: relative;
+}
+
+.sidebar__item--active::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent);
 }
 
 /* --- status bar --- */
@@ -88,43 +176,6 @@ body {
 
 .connection-pill--closed .dot {
   background: var(--danger);
-}
-
-.status-bar__right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.lang-toggle {
-  -webkit-app-region: no-drag;
-}
-
-.lang-toggle .segmented__option {
-  flex: none;
-  padding: 4px 8px;
-  font-size: 12px;
-}
-
-.help-button {
-  -webkit-app-region: no-drag;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.help-button:hover {
-  color: var(--text);
-  border-color: var(--text-muted);
 }
 
 .error-banner {
@@ -557,6 +608,47 @@ html.picker-mode #root {
   gap: 8px;
 }
 
+/* --- toggle switches (replaces native checkboxes for on/off settings) --- */
+
+.field--checkbox input[type='checkbox'],
+.rule-card__toggle input[type='checkbox'] {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  width: 34px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: var(--gray);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.field--checkbox input[type='checkbox']::before,
+.rule-card__toggle input[type='checkbox']::before {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s ease;
+}
+
+.field--checkbox input[type='checkbox']:checked,
+.rule-card__toggle input[type='checkbox']:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.field--checkbox input[type='checkbox']:checked::before,
+.rule-card__toggle input[type='checkbox']:checked::before {
+  transform: translateX(14px);
+}
+
 .field__error {
   color: var(--danger);
   font-size: 12px;
@@ -583,6 +675,38 @@ html.picker-mode #root {
   background: var(--accent);
   color: #06281c;
   font-weight: 600;
+}
+
+.segmented--icon .segmented__option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.segmented__icon {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+/* --- settings page --- */
+
+.settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 480px;
+}
+
+.settings-page .segmented {
+  max-width: 280px;
+  margin-top: 8px;
+}
+
+.settings-page .button {
+  margin-top: 4px;
 }
 
 .notice {
@@ -742,10 +866,6 @@ html.picker-mode #root {
 
 .help-header-row h2 {
   margin: 0;
-}
-
-.help-lang-toggle {
-  width: auto;
 }
 
 .help-tabs {

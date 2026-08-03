@@ -13,6 +13,18 @@
     "disconnected": "已中斷連線",
     "help": "說明"
   },
+  "nav": {
+    "rules": "規則",
+    "activity": "活動紀錄",
+    "settings": "設定"
+  },
+  "settings": {
+    "languageTitle": "語言",
+    "languageDescription": "選擇整個應用程式要顯示的語言。",
+    "aboutTitle": "關於",
+    "version": "版本 {version}",
+    "versionUnknown": "版本未知"
+  },
   "engineControls": {
     "running": "執行中",
     "stopped": "已停止",

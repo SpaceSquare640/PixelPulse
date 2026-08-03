@@ -13,6 +13,18 @@
     "disconnected": "Disconnected",
     "help": "Help"
   },
+  "nav": {
+    "rules": "Rules",
+    "activity": "Activity",
+    "settings": "Settings"
+  },
+  "settings": {
+    "languageTitle": "Language",
+    "languageDescription": "Choose the language for the whole app.",
+    "aboutTitle": "About",
+    "version": "Version {version}",
+    "versionUnknown": "Version unknown"
+  },
   "engineControls": {
     "running": "Running",
     "stopped": "Stopped",

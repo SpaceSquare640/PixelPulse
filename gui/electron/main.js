@@ -239,6 +239,14 @@ ipcMain.handle("dialog:pick-image-file", async () => {
   return result.filePaths[0];
 });
 
+// Lets the renderer show the running app's own version (Settings page) --
+// reads from package.json (dev) or the packaged app's metadata, same value
+// electron-builder stamps into the installer.
+// 讓前端能顯示目前執行中 App 自己的版本號（設定頁用）—— 讀取的是
+// package.json（開發模式）或打包後 App 本身的中繼資料，跟 electron-builder
+// 蓋在安裝檔上的版本號是同一個值。
+ipcMain.handle("app:get-version", () => app.getVersion());
+
 app.whenReady().then(() => {
   startBundledServer();
   createWindow();

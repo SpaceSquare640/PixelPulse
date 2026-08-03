@@ -76,6 +76,10 @@ stable. Press `Ctrl+Alt+Q` at any time to stop the engine immediately.
    window minimizes to the system tray on close instead of quitting — use
    the tray icon's "Quit" item to actually exit.
 
+The sidebar on the left switches between three pages: **Rules** (rule list +
+engine start/stop), **Activity** (the live event log), and **Settings**
+(language, app version, and the Help panel).
+
 Click **New Rule** to open the editor:
 
 1. **Trigger** — pick "Image (template)" or "Pixel colour". For an image
@@ -97,10 +101,15 @@ New rules always start in dry-run — flip the checkbox off in the rule list's
 toggle once you trust it. Drag rule cards by the handle to reorder them
 (rules are scanned in list order).
 
-Click the **?** button in the top-right corner for the in-app **Help**
-panel — a user manual, user notice, terms of service, disclaimer, and privacy
-policy, each available in English and 繁體中文 via the language toggle.
-Source: `gui/src/content/`.
+Click **Edit** on any rule card to reopen the same 3-step editor pre-filled
+with that rule's current settings — save to update it in place instead of
+creating a duplicate. **Delete All** in the rule list header clears every
+rule at once (with a confirmation prompt first).
+
+The **Help** button on the Settings page opens the in-app **Help** panel —
+a user manual, user notice, terms of service, disclaimer, and privacy
+policy, each available in English and 繁體中文 via the language switcher
+(also on the Settings page). Source: `gui/src/content/`.
 
 ## License, disclaimer, and user notice
 
@@ -209,7 +218,9 @@ gui/
    │  ├─ MacroStepEditor.tsx  # step list editor for the "macro" action
    │  ├─ PickerOverlay.tsx   # renders inside the transparent picker window
    │  ├─ RuleList.tsx        # card list, thumbnails, drag-to-reorder
-   │  ├─ HelpModal.tsx       # in-app manual/notice/terms/disclaimer/privacy (tabs + language toggle)
+   │  ├─ Sidebar.tsx         # left nav: Rules / Activity / Settings
+   │  ├─ SettingsPage.tsx    # language switcher, app version, Help trigger
+   │  ├─ HelpModal.tsx       # in-app manual/notice/terms/disclaimer/privacy (tabs, follows global language)
    │  ├─ EngineControls.tsx / LogPanel.tsx / StatusBar.tsx
    ├─ content/               # userManual.tsx / userNotice.tsx / termsOfService.tsx /
    │                         # disclaimer.tsx / privacyPolicy.tsx (EN + zh-TW)
