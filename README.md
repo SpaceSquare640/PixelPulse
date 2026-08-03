@@ -78,15 +78,20 @@ stable. Press `Ctrl+Alt+Q` at any time to stop the engine immediately.
 
 Click **New Rule** to open the editor:
 
-1. **Trigger** — pick "Image (template)" or "Pixel colour", then click
-   *Select Region on Screen* / *Pick a Point on Screen*. The whole desktop
-   dims except the area you're selecting; drag a box (or click a point) and
-   release. The image/pixel is captured immediately and a thumbnail/colour
-   swatch shows up. Use **Test Match** to check it detects correctly before
-   saving.
+1. **Trigger** — pick "Image (template)" or "Pixel colour". For an image
+   trigger, choose how to supply it: *Select Region on Screen* (drag a box;
+   the whole desktop dims except the area you're selecting) or *Browse for
+   Image File* (pick an existing image from disk). A screen-cropped region
+   can optionally check **Scan the whole screen** to match the target
+   anywhere rather than just where it was captured; an uploaded file always
+   scans the whole screen (there's no region to fall back to). Use
+   **Test Match** to check it detects correctly before saving.
 2. **Action** — click, double-click, key press, typed text, or **Macro
    (multi-step)**.
-3. **Safety** — name, cooldown, optional trigger limit, and dry-run.
+3. **Safety** — name, an optional trigger limit, dry-run, and either a
+   cooldown (minimum time between triggers) or **Only trigger once until it
+   disappears and reappears** — for a rule that should fire the instant its
+   target shows up, with no cooldown or count/order settings to think about.
 
 New rules always start in dry-run — flip the checkbox off in the rule list's
 toggle once you trust it. Drag rule cards by the handle to reorder them

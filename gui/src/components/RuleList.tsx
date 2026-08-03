@@ -80,6 +80,8 @@ export function RuleList({ rules, onToggle, onDelete, onReorder, onNewRule }: Pr
                 <div className="rule-card__badges">
                   <span className="badge">{t(`triggerKind.${rule.trigger.kind as TriggerConfig['kind']}`)}</span>
                   <span className="badge">{t(`actionKind.${rule.action.kind as ActionConfig['kind']}`)}</span>
+                  {rule.trigger.roi == null && <span className="badge">{t('ruleList.badgeWholeScreen')}</span>}
+                  {rule.oncePerAppearance && <span className="badge">{t('ruleList.badgeOncePerAppearance')}</span>}
                   {rule.dryRun && <span className="badge badge--warning">{t('ruleList.badgeDryRun')}</span>}
                 </div>
               </div>

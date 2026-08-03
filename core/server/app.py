@@ -25,6 +25,8 @@ from core.rules.events import EngineEvent
 from core.server.protocol import (
     CaptureCropMessage,
     CaptureCropResponse,
+    CaptureImportMessage,
+    CaptureImportResponse,
     CapturePixelMessage,
     CapturePixelResponse,
     ClientMessage,
@@ -188,6 +190,11 @@ def create_app(
                 rgb = await asyncio.to_thread(service.capture_pixel, message.x, message.y)
                 await websocket.send_json(
                     CapturePixelResponse(x=message.x, y=message.y, targetRgb=rgb).model_dump(by_alias=True)
+                )
+            elif isinstance(message, CaptureImportMessage):
+                image_path, preview_b64 = await asyncio.to_thread(service.import_image, message.path, message.name)
+                await websocket.send_json(
+                    CaptureImportResponse(imagePath=image_path, previewPngBase64=preview_b64).model_dump(by_alias=True)
                 )
             elif isinstance(message, EngineStartMessage):
                 service.start()

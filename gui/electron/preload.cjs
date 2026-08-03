@@ -13,4 +13,5 @@ contextBridge.exposeInMainWorld("pixelpulse", {
   pickRegion: () => ipcRenderer.invoke("picker:start-region"),
   pickPoint: () => ipcRenderer.invoke("picker:start-point"),
   reportPickerResult: (result) => ipcRenderer.send("picker:result", result),
+  pickImageFile: () => ipcRenderer.invoke("dialog:pick-image-file"),
 });

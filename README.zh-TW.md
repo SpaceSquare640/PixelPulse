@@ -68,12 +68,19 @@ python -m core.run rules.json
 
 點擊 **New Rule** 開啟規則編輯器：
 
-1. **Trigger（觸發條件）** —— 選「Image (template)」或「Pixel colour」，然後點
-   *Select Region on Screen* / *Pick a Point on Screen*。整個桌面會變暗，只留下你
-   正在選取的範圍；拖曳框選一塊區域（或點選一個點）後放開，圖片/像素會立即擷取，
-   縮圖或色塊會顯示出來。存檔前可以用 **Test Match** 確認辨識準確。
+1. **Trigger（觸發條件）** —— 選「Image (template)」或「Pixel colour」。選圖片
+   觸發時，可以選擇圖片的來源：*Select Region on Screen*（拖曳框選，整個桌面會
+   變暗只留下你正在選取的範圍）或 *Browse for Image File*（從硬碟選一張既有的
+   圖片）。框選出來的區域可以另外勾選 **Scan the whole screen**，讓目標在螢幕
+   任何地方出現都算命中，而不限於當初框選的那塊區域；上傳的圖片檔案則一律
+   掃描整個螢幕（因為沒有對應的框選區域可以退回去用）。存檔前可以用
+   **Test Match** 確認辨識準確。
 2. **Action（動作）** —— 點擊、雙擊、按鍵、輸入文字，或是 **Macro（多步驟巨集）**。
-3. **Safety（安全參數）** —— 名稱、冷卻時間、可選的觸發上限、dry-run。
+3. **Safety（安全參數）** —— 名稱、可選的觸發上限、dry-run，以及「冷卻時間」
+   （兩次觸發之間的最短間隔）或 **Only trigger once until it disappears and
+   reappears**（只在目標出現時觸發一次，直到它消失後重新出現才會再觸發）兩者
+   擇一 —— 給那種「目標一出現就要立刻反應、不需要想冷卻時間或次數次序設定」
+   的規則用。
 
 新規則一律先進入 dry-run，確認沒問題後再到規則清單把開關切成正式執行。拖曳規則卡片
 左側的把手可以調整順序（規則按清單順序依序掃描）。

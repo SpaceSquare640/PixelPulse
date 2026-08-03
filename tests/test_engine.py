@@ -4,6 +4,7 @@ import time
 import cv2
 import numpy as np
 
+from core.capture.screen import Region
 from core.rules.engine import RuleEngine
 from core.rules.models import RuleConfig
 
@@ -147,11 +148,15 @@ class _RoiCapture:
     rules with distinct ROIs be scanned against distinct synthetic frames.
     """
 
-    def __init__(self, roi_to_frame: dict):
+    def __init__(self, roi_to_frame: dict, full_screen: Region | None = None):
         self._roi_to_frame = roi_to_frame
+        self._full_screen = full_screen
 
     def grab(self, region):
         return self._roi_to_frame[(region.left, region.top, region.width, region.height)]
+
+    def full_screen_region(self, monitor_index: int = 1):
+        return self._full_screen
 
     def close(self) -> None:
         pass
@@ -293,3 +298,91 @@ def test_parallel_mode_creates_and_closes_captures_on_their_own_thread():
 
     for _, closing_thread_id, owner_thread_id in closes:
         assert closing_thread_id == owner_thread_id  # closed by its own creator thread
+
+
+# --- "Instant trigger": optional full-screen ROI + once_per_appearance -----
+
+
+def test_null_roi_scans_the_full_screen_region(tmp_path):
+    # A trigger with roi=None means "search the whole screen" -- the engine
+    # must ask the capture for its full_screen_region() instead of trying to
+    # unpack a region tuple out of None.
+    rng = np.random.default_rng(7)
+    template = rng.integers(0, 255, size=(20, 20, 3), dtype=np.uint8)
+    template_path = tmp_path / "t.png"
+    cv2.imwrite(str(template_path), template)
+
+    full_screen = Region(0, 0, 60, 60)
+    frame = np.zeros((60, 60, 3), dtype=np.uint8)
+    frame[10:30, 10:30] = template
+    capture = _RoiCapture({(0, 0, 60, 60): frame}, full_screen=full_screen)
+
+    rule = RuleConfig.model_validate(
+        {
+            "name": "whole-screen",
+            "trigger": {"kind": "template", "roi": None, "image": str(template_path), "threshold": 0.9},
+            "action": {"kind": "click"},
+            "cooldownMs": 100_000,
+            "dryRun": True,
+        }
+    )
+
+    events = []
+    engine = RuleEngine(rules=[rule], capture=capture, input_backend=_NoopBackend(), on_event=events.append, scan_interval_s=0.02)
+    _run_briefly(engine)
+
+    assert any(e.type == "rule_matched" and e.rule_name == "whole-screen" for e in events)
+
+
+def test_once_per_appearance_fires_once_then_rearms_on_disappear(tmp_path):
+    # oncePerAppearance=True must fire exactly once per false->true
+    # transition, not once per scan tick the target happens to stay visible,
+    # and must fire again once the target disappears and reappears.
+    rng = np.random.default_rng(11)
+    template = rng.integers(0, 255, size=(20, 20, 3), dtype=np.uint8)
+    template_path = tmp_path / "t.png"
+    cv2.imwrite(str(template_path), template)
+
+    roi = (0, 0, 60, 60)
+    blank_frame = np.zeros((60, 60, 3), dtype=np.uint8)
+    matching_frame = blank_frame.copy()
+    matching_frame[10:30, 10:30] = template
+
+    visible = [True]
+
+    class _ToggleCapture:
+        def grab(self, region):
+            key = (region.left, region.top, region.width, region.height)
+            assert key == roi
+            return matching_frame if visible[0] else blank_frame
+
+    rule = RuleConfig.model_validate(
+        {
+            "name": "once-rule",
+            "trigger": {"kind": "template", "roi": list(roi), "image": str(template_path), "threshold": 0.9},
+            "action": {"kind": "click"},
+            "cooldownMs": 0,
+            "oncePerAppearance": True,
+            "dryRun": True,
+        }
+    )
+
+    events = []
+    engine = RuleEngine(
+        rules=[rule], capture=_ToggleCapture(), input_backend=_NoopBackend(), on_event=events.append, scan_interval_s=0.02
+    )
+    thread = threading.Thread(target=engine.run_forever, daemon=True)
+    thread.start()
+
+    time.sleep(0.15)  # stays visible across several ticks -- should fire only once
+    visible[0] = False
+    time.sleep(0.1)  # gives the engine a chance to notice it disappeared
+    visible[0] = True
+    time.sleep(0.1)  # reappears -- should fire a second time
+
+    engine.stop()
+    thread.join(timeout=2)
+    assert thread.is_alive() is False
+
+    matched = [e for e in events if e.type == "rule_matched" and e.rule_name == "once-rule"]
+    assert len(matched) == 2

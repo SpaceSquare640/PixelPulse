@@ -12,6 +12,11 @@ interface CapturePixelResult {
   targetRgb: [number, number, number]
 }
 
+interface ImportImageResult {
+  imagePath: string
+  previewPngBase64: string
+}
+
 interface PreviewResult {
   matched: boolean
   x?: number | null
@@ -25,18 +30,21 @@ interface Props {
   onSave: (rule: RuleConfig) => void
   captureCrop: (roi: [number, number, number, number], name: string) => Promise<CaptureCropResult>
   capturePixel: (x: number, y: number) => Promise<CapturePixelResult>
+  importImage: (path: string, name: string) => Promise<ImportImageResult>
   previewTrigger: (trigger: TriggerConfig) => Promise<PreviewResult>
 }
 
 const STEP_KEYS = ['stepTrigger', 'stepAction', 'stepSafety'] as const
 
-export function RuleEditor({ existingNames, onClose, onSave, captureCrop, capturePixel, previewTrigger }: Props) {
+export function RuleEditor({ existingNames, onClose, onSave, captureCrop, capturePixel, importImage, previewTrigger }: Props) {
   const { t } = useLanguage()
   const [step, setStep] = useState(0)
 
   const [name, setName] = useState('')
   const [triggerKind, setTriggerKind] = useState<'template' | 'pixel'>('template')
+  const [imageSource, setImageSource] = useState<'crop' | 'file'>('crop')
   const [roi, setRoi] = useState<[number, number, number, number] | null>(null)
+  const [wholeScreen, setWholeScreen] = useState(false)
   const [image, setImage] = useState<string | null>(null)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const [threshold, setThreshold] = useState(0.85)
@@ -54,6 +62,7 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
 
   const [cooldownMs, setCooldownMs] = useState(1000)
   const [maxTriggers, setMaxTriggers] = useState<number | ''>('')
+  const [oncePerAppearance, setOncePerAppearance] = useState(false)
   const [dryRun, setDryRun] = useState(true)
 
   const [previewResult, setPreviewResult] = useState<PreviewResult | null>(null)
@@ -63,8 +72,12 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
 
   function buildTrigger(): TriggerConfig | null {
     if (triggerKind === 'template') {
-      if (!roi || !image) return null
-      return { kind: 'template', roi, image, threshold }
+      if (!image) return null
+      // An uploaded file has no associated screen region, so it always
+      // scans the whole screen; a screen-cropped region can optionally do
+      // the same via the "whole screen" checkbox.
+      const scanWholeScreen = imageSource === 'file' || wholeScreen
+      return { kind: 'template', roi: scanWholeScreen ? null : roi, image, threshold }
     }
     if (!roi || !pixelPoint || !targetRgb) return null
     return {
@@ -89,6 +102,26 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
       setRoi(roiTuple)
       setImage(result.imagePath)
       setPreviewImage(result.previewPngBase64)
+      setPreviewResult(null)
+    } catch (err) {
+      setCaptureError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setPicking(false)
+    }
+  }
+
+  async function handlePickImageFile() {
+    if (!window.pixelpulse) return
+    setPicking(true)
+    setCaptureError(null)
+    try {
+      const path = await window.pixelpulse.pickImageFile()
+      if (!path) return
+      const result = await importImage(path, name || 'target')
+      setImage(result.imagePath)
+      setPreviewImage(result.previewPngBase64)
+      // An uploaded file isn't tied to any particular screen region.
+      setRoi(null)
       setPreviewResult(null)
     } catch (err) {
       setCaptureError(err instanceof Error ? err.message : String(err))
@@ -148,13 +181,13 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
       },
       cooldownMs,
       maxTriggers: maxTriggers === '' ? null : Number(maxTriggers),
+      oncePerAppearance,
       dryRun,
     }
     onSave(rule)
   }
 
-  const step1Complete =
-    triggerKind === 'template' ? !!(roi && image) : !!(roi && pixelPoint && targetRgb)
+  const step1Complete = triggerKind === 'template' ? !!image : !!(roi && pixelPoint && targetRgb)
   const nameIsValid = name.trim().length > 0 && !existingNames.includes(name.trim())
   const macroStepsNeedingTarget = ['click', 'double_click', 'wait_for']
   const macroComplete =
@@ -208,12 +241,61 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
 
               {triggerKind === 'template' ? (
                 <>
-                  <button type="button" className="button" disabled={!hasPickerBridge || picking} onClick={handlePickRegion}>
-                    {picking ? t('ruleEditor.picking') : t('ruleEditor.selectRegion')}
-                  </button>
+                  <label className="field">
+                    <span>{t('ruleEditor.imageSourceLabel')}</span>
+                    <div className="segmented">
+                      <button
+                        type="button"
+                        className={imageSource === 'crop' ? 'segmented__option segmented__option--active' : 'segmented__option'}
+                        onClick={() => {
+                          setImageSource('crop')
+                          setImage(null)
+                          setPreviewImage(null)
+                          setRoi(null)
+                          setPreviewResult(null)
+                        }}
+                      >
+                        {t('ruleEditor.imageSourceCrop')}
+                      </button>
+                      <button
+                        type="button"
+                        className={imageSource === 'file' ? 'segmented__option segmented__option--active' : 'segmented__option'}
+                        onClick={() => {
+                          setImageSource('file')
+                          setImage(null)
+                          setPreviewImage(null)
+                          setRoi(null)
+                          setPreviewResult(null)
+                        }}
+                      >
+                        {t('ruleEditor.imageSourceFile')}
+                      </button>
+                    </div>
+                  </label>
+
+                  {imageSource === 'crop' ? (
+                    <button type="button" className="button" disabled={!hasPickerBridge || picking} onClick={handlePickRegion}>
+                      {picking ? t('ruleEditor.picking') : t('ruleEditor.selectRegion')}
+                    </button>
+                  ) : (
+                    <button type="button" className="button" disabled={!hasPickerBridge || picking} onClick={handlePickImageFile}>
+                      {picking ? t('ruleEditor.picking') : t('ruleEditor.browseFile')}
+                    </button>
+                  )}
+
                   {previewImage && (
                     <img className="capture-preview" src={`data:image/png;base64,${previewImage}`} alt={t('ruleEditor.capturedTargetAlt')} />
                   )}
+
+                  {imageSource === 'crop' ? (
+                    <label className="field field--checkbox">
+                      <input type="checkbox" checked={wholeScreen} onChange={(e) => setWholeScreen(e.target.checked)} />
+                      <span>{t('ruleEditor.wholeScreenLabel')}</span>
+                    </label>
+                  ) : (
+                    <p className="muted">{t('ruleEditor.wholeScreenForcedNote')}</p>
+                  )}
+
                   <label className="field">
                     <span>{t('ruleEditor.matchThreshold', { value: threshold.toFixed(2) })}</span>
                     <input
@@ -330,10 +412,20 @@ export function RuleEditor({ existingNames, onClose, onSave, captureCrop, captur
                 />
                 {name.trim() && !nameIsValid && <span className="field__error">{t('ruleEditor.duplicateNameError')}</span>}
               </label>
-              <label className="field">
-                <span>{t('ruleEditor.cooldown')}</span>
-                <input type="number" min={0} value={cooldownMs} onChange={(e) => setCooldownMs(Number(e.target.value))} />
+              <label className="field field--checkbox">
+                <input
+                  type="checkbox"
+                  checked={oncePerAppearance}
+                  onChange={(e) => setOncePerAppearance(e.target.checked)}
+                />
+                <span>{t('ruleEditor.oncePerAppearanceLabel')}</span>
               </label>
+              {!oncePerAppearance && (
+                <label className="field">
+                  <span>{t('ruleEditor.cooldown')}</span>
+                  <input type="number" min={0} value={cooldownMs} onChange={(e) => setCooldownMs(Number(e.target.value))} />
+                </label>
+              )}
               <label className="field">
                 <span>{t('ruleEditor.maxTriggers')}</span>
                 <input

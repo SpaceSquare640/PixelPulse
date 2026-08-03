@@ -22,6 +22,7 @@ function App() {
     reorderRules,
     captureCrop,
     capturePixel,
+    importImage,
     previewTrigger,
   } = useEngineSocket()
 
@@ -61,6 +62,7 @@ function App() {
           }}
           captureCrop={captureCrop}
           capturePixel={capturePixel}
+          importImage={importImage}
           previewTrigger={previewTrigger}
         />
       )}

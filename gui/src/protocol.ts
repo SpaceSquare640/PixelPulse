@@ -11,7 +11,8 @@ export type MacroStepKind = 'click' | 'double_click' | 'key' | 'type' | 'wait_fo
 
 export interface TriggerConfig {
   kind: TriggerKind
-  roi: [number, number, number, number]
+  // null means "scan the whole screen" instead of a fixed region.
+  roi: [number, number, number, number] | null
   image?: string | null
   threshold?: number
   pixelX?: number | null
@@ -57,6 +58,9 @@ export interface RuleConfig {
   action: ActionConfig
   cooldownMs?: number
   maxTriggers?: number | null
+  // When true, cooldownMs is ignored and the rule fires once when the
+  // target appears, then stays silent until it disappears and reappears.
+  oncePerAppearance?: boolean
   dryRun?: boolean
   enabled?: boolean
 }
@@ -91,6 +95,7 @@ export type ClientMessage =
   | { type: 'rule.preview'; trigger: TriggerConfig }
   | { type: 'capture.crop'; roi: [number, number, number, number]; name: string }
   | { type: 'capture.pixel'; x: number; y: number }
+  | { type: 'capture.import'; path: string; name: string }
   | { type: 'engine.start' }
   | { type: 'engine.stop' }
   | { type: 'engine.status' }
@@ -104,4 +109,5 @@ export type ServerMessage =
   | { type: 'rule.preview'; matched: boolean; x?: number | null; y?: number | null; confidence?: number | null }
   | { type: 'capture.crop'; imagePath: string; previewPngBase64: string; roi: [number, number, number, number] }
   | { type: 'capture.pixel'; x: number; y: number; targetRgb: [number, number, number] }
+  | { type: 'capture.import'; imagePath: string; previewPngBase64: string }
   | { type: 'error'; message: string }

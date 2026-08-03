@@ -30,19 +30,25 @@ function En() {
       <ol>
         <li>
           <strong>Trigger</strong> — choose <em>Image (template)</em> to match a picture, or <em>Pixel colour</em> to
-          match a single point's colour. Click <em>Select Region on Screen</em> / <em>Pick a Point on Screen</em>: the
-          whole desktop dims except the area you're selecting. Drag a box (or click a point) and release — it's
-          captured immediately. Use <strong>Test Match</strong> to confirm it detects correctly on the current screen
-          before moving on. For template triggers, avoid a completely flat/solid-colour crop (e.g. a plain button
-          background with no icon or text) — with nothing to match against, detection can behave unpredictably.
+          match a single point's colour. For an image trigger, pick where the image comes from: <em>Select Region on
+          Screen</em> (the whole desktop dims except the area you're selecting — drag a box and release, it's
+          captured immediately) or <em>Browse for Image File</em> (choose an existing image from disk). A
+          screen-cropped region can optionally check <strong>Scan the whole screen</strong> to match the target
+          anywhere instead of only where it was captured; an uploaded file always scans the whole screen (there's no
+          region to fall back to). Use <strong>Test Match</strong> to confirm it detects correctly on the current
+          screen before moving on. For template triggers, avoid a completely flat/solid-colour crop (e.g. a plain
+          button background with no icon or text) — with nothing to match against, detection can behave
+          unpredictably.
         </li>
         <li>
           <strong>Action</strong> — click, double-click, press a key, type text, or build a <em>Macro</em> (see
           below).
         </li>
         <li>
-          <strong>Safety</strong> — give the rule a name, set a cooldown (minimum time between triggers), an optional
-          maximum trigger count, and whether it starts in dry-run.
+          <strong>Safety</strong> — give the rule a name, an optional maximum trigger count, and whether it starts in
+          dry-run. Then choose how it re-fires: a <strong>cooldown</strong> (minimum time between triggers), or
+          <strong> Only trigger once until it disappears and reappears</strong> — for a rule that should fire the
+          instant its target shows up, with nothing else to configure.
         </li>
       </ol>
 
@@ -80,6 +86,10 @@ function En() {
           no matter what it's doing.
         </li>
         <li><strong>Cooldown</strong> — stops a rule from firing repeatedly in a tight loop.</li>
+        <li>
+          <strong>Once per appearance</strong> — an alternative to cooldown: fires once when the target appears, then
+          stays quiet until it disappears and reappears, instead of repeatedly firing on a timer while it's visible.
+        </li>
         <li><strong>Max triggers</strong> — optionally caps how many times a rule can ever fire in one run.</li>
         <li>
           <strong>Closing the window</strong> doesn't quit the app — it minimizes to the system tray, and the engine
@@ -125,17 +135,21 @@ function Zh() {
       <ol>
         <li>
           <strong>Trigger（觸發條件）</strong> —— 選「Image (template)」比對圖片，或選「Pixel colour」比對單一座標的
-          顏色。點 <em>Select Region on Screen</em> / <em>Pick a Point on Screen</em>：整個桌面會變暗，只留下你正在
-          選取的範圍；拖曳框選一塊區域（或點選一個點）後放開，會立即擷取。用 <strong>Test Match</strong> 確認能在目前
-          畫面正確偵測到，再繼續下一步。樣板圖片請避免選到完全單色、沒有任何圖案或文字的區域 ——
-          沒有東西可以比對，辨識結果可能會不穩定。
+          顏色。選圖片觸發時，先選圖片的來源：<em>Select Region on Screen</em>（整個桌面會變暗，只留下你正在選取的
+          範圍；拖曳框選一塊區域後放開，會立即擷取）或 <em>Browse for Image File</em>（從硬碟選一張既有的圖片）。
+          框選出來的區域可以另外勾選 <strong>Scan the whole screen</strong>，讓目標在螢幕任何地方出現都算命中，
+          而不限於當初框選的那塊區域；上傳的圖片檔案則一律掃描整個螢幕（因為沒有對應的框選區域可以退回去用）。用
+          <strong>Test Match</strong> 確認能在目前畫面正確偵測到，再繼續下一步。樣板圖片請避免選到完全單色、
+          沒有任何圖案或文字的區域 —— 沒有東西可以比對，辨識結果可能會不穩定。
         </li>
         <li>
           <strong>Action（動作）</strong> —— 點擊、雙擊、按鍵、輸入文字，或建立一個 <em>Macro（巨集）</em>（見下方說明）。
         </li>
         <li>
-          <strong>Safety（安全參數）</strong> —— 幫規則取個名字，設定冷卻時間（兩次觸發之間至少間隔多久）、可選的
-          最多觸發次數，以及要不要一開始就是 dry-run（僅記錄不執行）。
+          <strong>Safety（安全參數）</strong> —— 幫規則取個名字、設定可選的最多觸發次數，以及要不要一開始就是
+          dry-run（僅記錄不執行）。接著選擇規則要怎麼重新觸發：<strong>冷卻時間</strong>（兩次觸發之間至少間隔
+          多久），或 <strong>Only trigger once until it disappears and reappears</strong>（只在目標出現時觸發一次，
+          直到它消失後重新出現才會再觸發）—— 給那種「目標一出現就要立刻反應、不需要另外設定」的規則用。
         </li>
       </ol>
 
@@ -170,6 +184,10 @@ function Zh() {
           <strong>緊急停止</strong> —— 任何時候按下 <code>Ctrl+Alt+Q</code>，都能立即讓引擎停止，不管它正在做什麼。
         </li>
         <li><strong>冷卻時間</strong> —— 避免同一條規則在短時間內反覆觸發。</li>
+        <li>
+          <strong>每次出現觸發一次</strong> —— 冷卻時間以外的另一種選擇：目標出現時觸發一次，之後保持沉默，直到它
+          消失後重新出現才會再觸發，而不是它持續可見時每隔固定時間就重複觸發。
+        </li>
         <li><strong>最多觸發次數</strong> —— 可選擇限制一條規則在單次執行期間最多能觸發幾次。</li>
         <li>
           <strong>關閉視窗</strong>不會結束程式 —— 只會縮到系統匣，引擎會繼續在背景執行。要真的離開，請用系統匣選單裡

@@ -26,7 +26,12 @@ class TriggerConfig(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     kind: Literal["template", "pixel"]
-    roi: RoiTuple
+    # None means "scan the whole (virtual) screen" instead of a fixed region --
+    # slower per scan, but the target can appear anywhere rather than just in
+    # a region picked in advance.
+    # None 代表「掃描整個（虛擬）螢幕」而非固定區域 —— 每次掃描較慢，但目標可以
+    # 出現在畫面任何地方，而不只是事先框選好的區域。
+    roi: RoiTuple | None = None
 
     # template trigger / 樣板匹配用
     image: str | None = None
@@ -102,6 +107,14 @@ class RuleConfig(BaseModel):
     action: ActionConfig
     cooldown_ms: int = Field(default=1000, alias="cooldownMs")
     max_triggers: int | None = Field(default=None, alias="maxTriggers")
+    # When true, cooldown_ms is ignored and the rule instead fires once on
+    # each false->true transition (target appears), then stays silent until
+    # the target disappears and reappears -- rather than repeatedly firing
+    # on every scan tick the target stays visible. See RuleEngine._handle_outcome.
+    # 為 true 時忽略 cooldown_ms，改成只在「未命中 -> 命中」的那一刻觸發一次
+    # （目標剛出現時），之後保持沉默，直到目標先消失、再重新出現才會再觸發一次
+    # ——而不是目標持續可見時每次掃描都重複觸發。詳見 RuleEngine._handle_outcome。
+    once_per_appearance: bool = Field(default=False, alias="oncePerAppearance")
     # New rules default to dry-run (log only, no action) until confirmed stable.
     # 新規則預設為 dry-run（只記錄不執行動作），確認辨識穩定後再手動關閉。
     dry_run: bool = Field(default=True, alias="dryRun")

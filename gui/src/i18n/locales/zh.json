@@ -24,7 +24,9 @@
     "newRule": "新增規則",
     "empty": "尚未有任何規則，點擊「新增規則」建立第一條。",
     "dragToReorder": "拖曳以調整順序",
-    "badgeDryRun": "dry-run"
+    "badgeDryRun": "dry-run",
+    "badgeWholeScreen": "整個螢幕",
+    "badgeOncePerAppearance": "每次出現觸發一次"
   },
   "triggerKind": {
     "template": "圖片",
@@ -51,6 +53,12 @@
     "picking": "選取中…",
     "pickPoint": "在螢幕上點選一個點",
     "capturedTargetAlt": "已擷取的目標",
+    "imageSourceLabel": "圖片來源",
+    "imageSourceCrop": "從螢幕擷取",
+    "imageSourceFile": "選擇圖片檔案",
+    "browseFile": "瀏覽圖片檔案",
+    "wholeScreenLabel": "掃描整個螢幕（不限於這個區域）",
+    "wholeScreenForcedNote": "上傳的圖片會在螢幕任何地方進行比對。",
     "matchThreshold": "比對閾值：{value}",
     "colourTolerance": "顏色容許誤差：{value}",
     "pixelSwatchAt": "rgb({rgb})，位於 ({x}, {y})",
@@ -76,6 +84,7 @@
     "duplicateNameError": "已經有一條同名的規則了。",
     "cooldown": "冷卻時間（毫秒）",
     "maxTriggers": "最多觸發次數（可選）",
+    "oncePerAppearanceLabel": "只在目標出現時觸發一次，直到它消失後重新出現才會再觸發",
     "dryRunLabel": "Dry run（只記錄命中結果，先不執行點擊/輸入）",
     "saveRule": "儲存規則"
   },

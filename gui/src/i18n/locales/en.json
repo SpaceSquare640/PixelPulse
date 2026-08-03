@@ -24,7 +24,9 @@
     "newRule": "New Rule",
     "empty": "No rules yet. Click \"New Rule\" to create one.",
     "dragToReorder": "Drag to reorder",
-    "badgeDryRun": "dry-run"
+    "badgeDryRun": "dry-run",
+    "badgeWholeScreen": "whole screen",
+    "badgeOncePerAppearance": "once per appearance"
   },
   "triggerKind": {
     "template": "template",
@@ -51,6 +53,12 @@
     "picking": "Picking…",
     "pickPoint": "Pick a Point on Screen",
     "capturedTargetAlt": "Captured target",
+    "imageSourceLabel": "Image source",
+    "imageSourceCrop": "Capture from screen",
+    "imageSourceFile": "Choose image file",
+    "browseFile": "Browse for Image File",
+    "wholeScreenLabel": "Scan the whole screen (not just this region)",
+    "wholeScreenForcedNote": "An uploaded image is matched anywhere on screen.",
     "matchThreshold": "Match threshold: {value}",
     "colourTolerance": "Colour tolerance: {value}",
     "pixelSwatchAt": "rgb({rgb}) at ({x}, {y})",
@@ -76,6 +84,7 @@
     "duplicateNameError": "A rule with this name already exists.",
     "cooldown": "Cooldown (ms)",
     "maxTriggers": "Max triggers (optional)",
+    "oncePerAppearanceLabel": "Only trigger once until it disappears and reappears",
     "dryRunLabel": "Dry run (log matches, don't actually click/type yet)",
     "saveRule": "Save Rule"
   },

@@ -65,10 +65,13 @@ class _RuleState:
     # 一旦偵測拋出例外（例如樣板圖片不存在）就設為 True，避免單一壞掉的規則
     # 讓整個掃描迴圈崩潰，或每次掃描都重複失敗。
     is_broken: bool = False
-
-    def region(self) -> Region:
-        left, top, width, height = self.config.trigger.roi
-        return Region(left, top, width, height)
+    # Only meaningful when config.once_per_appearance is True -- tracks
+    # whether the previous tick was a match, so a rule fires on the
+    # false->true transition instead of every tick the target stays visible.
+    # 只有 config.once_per_appearance 為 True 時才有意義 —— 記錄前一次掃描
+    # 是否命中，讓規則只在「未命中 -> 命中」那一刻觸發，而非目標持續可見時
+    # 每次掃描都觸發。
+    was_matched: bool = False
 
     def is_on_cooldown(self, now: float) -> bool:
         elapsed_ms = (now - self.last_triggered_at) * 1000
@@ -276,8 +279,14 @@ class RuleEngine:
         跟 `state` 唯讀的設定內容。
         """
         now = time.time()
-        # 冷卻中、已達觸發上限、或這條規則先前偵測時已出錯，就跳過。
-        if state.is_broken or state.is_on_cooldown(now) or state.has_reached_max_triggers():
+        # once_per_appearance rules ignore cooldown -- detection must run
+        # every tick regardless, so the engine can notice the target
+        # disappearing and re-arm the edge trigger. See _handle_outcome.
+        # once_per_appearance 的規則不看冷卻時間 —— 每次掃描都要執行偵測，
+        # 這樣引擎才能發現目標消失、重新武裝邊緣觸發。詳見 _handle_outcome。
+        on_cooldown = not state.config.once_per_appearance and state.is_on_cooldown(now)
+        # 已達觸發上限、這條規則先前偵測時已出錯、或（非 once_per_appearance）冷卻中，就跳過。
+        if state.is_broken or on_cooldown or state.has_reached_max_triggers():
             return _ScanOutcome()
 
         try:
@@ -300,7 +309,20 @@ class RuleEngine:
             return
 
         match = outcome.match
-        if match is None:
+
+        if state.config.once_per_appearance:
+            # Edge-triggered: remember whether *this* tick matched, but only
+            # actually fire on the transition from not-matched to matched.
+            # Re-arms once the target disappears (match is None) -- see the
+            # module/RuleConfig docstrings for why.
+            # 邊緣觸發：記住「這一次」是否命中，但只在「從未命中變成命中」的
+            # 那個瞬間才真的觸發。目標消失（match 為 None）之後才會重新武裝
+            # ——原因見 module/RuleConfig 的說明。
+            was_matched = state.was_matched
+            state.was_matched = match is not None
+            if match is None or was_matched:
+                return
+        elif match is None:
             return
 
         now = time.time()
@@ -351,7 +373,7 @@ class RuleEngine:
         針對規則的 ROI 重新擷取畫面，並執行對應的偵測策略（樣板匹配或像素比對）。
         """
         trigger = state.config.trigger
-        region = state.region()
+        region = capture.full_screen_region(monitor_index=0) if trigger.roi is None else Region(*trigger.roi)
         frame = capture.grab(region)
 
         if trigger.kind == "template":

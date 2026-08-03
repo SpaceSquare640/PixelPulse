@@ -87,6 +87,21 @@ class CapturePixelMessage(BaseModel):
     y: int
 
 
+class CaptureImportMessage(BaseModel):
+    """Copy an existing image file on disk into the targets folder as a
+    template image -- the "browse for a file" alternative to the region
+    picker, for when the user already has a reference image instead of
+    wanting to crop one from the live screen.
+
+    把磁碟上既有的圖片檔案複製進 targets 資料夾，當作樣板圖片 —— 這是框選工具
+    以外的另一種做法，給已經有現成參考圖片、不需要從即時畫面裁切的使用者用。
+    """
+
+    type: Literal["capture.import"] = "capture.import"
+    path: str
+    name: str
+
+
 ClientMessage = Union[
     RuleCreateMessage,
     RuleListRequest,
@@ -96,6 +111,7 @@ ClientMessage = Union[
     RulePreviewMessage,
     CaptureCropMessage,
     CapturePixelMessage,
+    CaptureImportMessage,
     EngineStartMessage,
     EngineStopMessage,
     EngineStatusRequest,
@@ -110,6 +126,7 @@ _CLIENT_MESSAGE_TYPES: dict[str, type[BaseModel]] = {
     "rule.preview": RulePreviewMessage,
     "capture.crop": CaptureCropMessage,
     "capture.pixel": CapturePixelMessage,
+    "capture.import": CaptureImportMessage,
     "engine.start": EngineStartMessage,
     "engine.stop": EngineStopMessage,
     "engine.status": EngineStatusRequest,
@@ -175,6 +192,14 @@ class CapturePixelResponse(BaseModel):
     x: int
     y: int
     target_rgb: tuple[int, int, int] = Field(alias="targetRgb")
+
+
+class CaptureImportResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    type: Literal["capture.import"] = "capture.import"
+    image_path: str = Field(alias="imagePath")
+    preview_png_base64: str = Field(alias="previewPngBase64")
 
 
 class ErrorMessage(BaseModel):

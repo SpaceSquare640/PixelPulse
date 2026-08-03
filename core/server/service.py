@@ -22,6 +22,7 @@ import base64
 import logging
 import os
 import re
+import shutil
 import threading
 import uuid
 from pathlib import Path
@@ -167,12 +168,44 @@ class EngineService:
         frame = self._tools_capture.grab(Region(x, y, 1, 1))
         return read_pixel_rgb(frame, 0, 0)
 
+    def import_image(self, path: str, name: str) -> tuple[str, str]:
+        """Copy an existing image file into targets_dir as a template image --
+        the "browse for a file" alternative to cropping a live screen
+        selection. Returns the same (image_path, preview_png_base64) shape as
+        capture_crop() so the GUI can treat both the same way.
+
+        把既有的圖片檔案複製進 targets_dir，當作樣板圖片 —— 這是「瀏覽選擇檔案」
+        以外，取得樣板圖片的另一種方式，跟框選即時畫面互為替代。回傳跟
+        capture_crop() 一樣的 (image_path, preview_png_base64) 格式，讓 GUI
+        端可以用同一套邏輯處理兩者。
+        """
+        src = Path(path)
+        if not src.is_file():
+            raise FileNotFoundError(f"No such file: {path}")
+
+        frame = cv2.imread(str(src), cv2.IMREAD_COLOR)
+        if frame is None:
+            raise ValueError(f"Could not read image file: {path}")
+
+        self._targets_dir.mkdir(parents=True, exist_ok=True)
+        filename = f"{_slugify(name)}-{uuid.uuid4().hex[:8]}{src.suffix or '.png'}"
+        dest = self._targets_dir / filename
+        # Copy the original bytes (not a re-encode) so load_template() later
+        # reads exactly what the user picked.
+        # 複製原始檔案位元組（不重新編碼），讓之後 load_template() 讀到的
+        # 內容跟使用者當初選的檔案完全一致。
+        shutil.copy(src, dest)
+
+        ok, buf = cv2.imencode(".png", frame)
+        preview_b64 = base64.b64encode(buf.tobytes()).decode("ascii") if ok else ""
+        return dest.as_posix(), preview_b64
+
     def preview_trigger(self, trigger: TriggerConfig) -> Match | None:
         """Run a single detection pass for a trigger that isn't saved as a rule yet.
 
         對還沒存成規則的觸發條件，跑一次性的偵測測試。
         """
-        region = Region(*trigger.roi)
+        region = self._tools_capture.full_screen_region(monitor_index=0) if trigger.roi is None else Region(*trigger.roi)
         frame = self._tools_capture.grab(region)
 
         if trigger.kind == "template":

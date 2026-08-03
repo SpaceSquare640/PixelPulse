@@ -13,7 +13,7 @@
 // 做不到的事：開一個蓋住整個桌面、透明、置頂的第二個視窗，讓使用者拖曳框選
 // 一塊區域，或點選單一像素。
 
-import { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, screen } from "electron";
+import { app, BrowserWindow, Menu, Tray, dialog, ipcMain, nativeImage, screen } from "electron";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -221,6 +221,22 @@ ipcMain.handle("picker:start-point", () => startPicker("point"));
 // invoke() 呼叫就會被這個結果解決。
 ipcMain.on("picker:result", (_event, result) => {
   pendingPickerResolve?.(result);
+});
+
+// Native "browse for an existing image file" alternative to cropping a live
+// screen selection -- for when the user already has a reference image (e.g.
+// a saved icon) instead of wanting to capture one from the screen.
+//
+// 原生的「瀏覽選擇既有圖片檔案」功能，是框選即時畫面以外的另一種做法 ——
+// 給已經有現成參考圖片（例如存好的圖示）、不需要從螢幕擷取的使用者用。
+ipcMain.handle("dialog:pick-image-file", async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: "Select an image",
+    properties: ["openFile"],
+    filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "bmp", "webp"] }],
+  });
+  if (result.canceled || result.filePaths.length === 0) return null;
+  return result.filePaths[0];
 });
 
 app.whenReady().then(() => {

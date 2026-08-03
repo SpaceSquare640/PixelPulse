@@ -2,6 +2,8 @@ import json
 import time
 from pathlib import Path
 
+import cv2
+import numpy as np
 import pytest
 
 from core.rules.models import RuleConfig, TriggerConfig
@@ -75,6 +77,22 @@ def test_capture_crop_saves_file_and_returns_preview(service):
     assert Path(image_path).exists()
     assert Path(image_path).suffix == ".png"
     assert len(preview_b64) > 0
+
+
+def test_import_image_copies_file_and_returns_preview(service, tmp_path):
+    src = tmp_path / "source.png"
+    cv2.imwrite(str(src), np.zeros((10, 10, 3), dtype=np.uint8))
+
+    image_path, preview_b64 = service.import_image(str(src), "My Icon!")
+
+    assert Path(image_path).exists()
+    assert Path(image_path).suffix == ".png"
+    assert len(preview_b64) > 0
+
+
+def test_import_image_missing_file_raises(service, tmp_path):
+    with pytest.raises(FileNotFoundError):
+        service.import_image(str(tmp_path / "nope.png"), "x")
 
 
 def test_capture_pixel_returns_rgb_triplet(service):

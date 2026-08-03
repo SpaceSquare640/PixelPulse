@@ -16,7 +16,7 @@ export interface EngineStatus {
 
 // Server replies that a specific request() call is waiting for, as opposed
 // to unsolicited broadcasts (rule.list, engine.status, engine.event).
-type ResponseMessage = Extract<ServerMessage, { type: 'capture.crop' | 'capture.pixel' | 'rule.preview' }>
+type ResponseMessage = Extract<ServerMessage, { type: 'capture.crop' | 'capture.pixel' | 'capture.import' | 'rule.preview' }>
 
 interface PendingRequest {
   resolve: (message: ResponseMessage) => void
@@ -25,7 +25,7 @@ interface PendingRequest {
 }
 
 function isResponseType(type: ServerMessage['type']): type is ResponseMessage['type'] {
-  return type === 'capture.crop' || type === 'capture.pixel' || type === 'rule.preview'
+  return type === 'capture.crop' || type === 'capture.pixel' || type === 'capture.import' || type === 'rule.preview'
 }
 
 export function useEngineSocket() {
@@ -182,6 +182,15 @@ export function useEngineSocket() {
     [request],
   )
 
+  const importImage = useCallback(
+    async (path: string, name: string) => {
+      const response = await request({ type: 'capture.import', path, name })
+      if (response.type !== 'capture.import') throw new Error('Unexpected response to capture.import')
+      return response
+    },
+    [request],
+  )
+
   const previewTrigger = useCallback(
     async (trigger: TriggerConfig) => {
       const response = await request({ type: 'rule.preview', trigger })
@@ -205,6 +214,7 @@ export function useEngineSocket() {
     reorderRules,
     captureCrop,
     capturePixel,
+    importImage,
     previewTrigger,
   }
 }
